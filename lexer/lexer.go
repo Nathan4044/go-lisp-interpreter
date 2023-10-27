@@ -148,15 +148,15 @@ func isValidIdentChar(ch byte) bool {
 }
 
 func isReservedChar(ch byte) bool {
-    reserved := map[byte]bool{
-        '(': true,
-        ')': true,
-        '{': true,
-        '}': true,
-        0: true,
-    }
+	reserved := map[byte]bool{
+		'(': true,
+		')': true,
+		'{': true,
+		'}': true,
+		0:   true,
+	}
 
-    _, ok := reserved[ch]
+	_, ok := reserved[ch]
 
 	return ok
 }

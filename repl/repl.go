@@ -26,14 +26,14 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-        result, errors := interpreter.Run(scanner.Text(), env)
+		result, errors := interpreter.Run(scanner.Text(), env)
 
-        if len(errors) > 0 {
-            for _, err := range errors {
-                fmt.Fprintln(out, err)
-            }
-        } else {
-            fmt.Fprintln(out, result.Inspect())
-        }
+		if len(errors) > 0 {
+			for _, err := range errors {
+				fmt.Fprintln(out, err)
+			}
+		} else {
+			fmt.Fprintln(out, result.Inspect())
+		}
 	}
 }

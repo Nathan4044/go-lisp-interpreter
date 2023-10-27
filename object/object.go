@@ -10,7 +10,7 @@ import (
 
 const (
 	INTEGER_OBJ  = "INTEGER"
-    FLOAT_OBJ    = "FLOAT"
+	FLOAT_OBJ    = "FLOAT"
 	STRING_OBJ   = "STRING"
 	FUNCTION_OBJ = "FUNCTION"
 	LIST_OBJ     = "LIST"
@@ -174,66 +174,66 @@ func (e *ErrorObject) Inspect() string {
 }
 
 type HashKey struct {
-    Type ObjectType
-    Value uint64
+	Type  ObjectType
+	Value uint64
 }
 
 type Hashable interface {
-    HashKey() HashKey
+	HashKey() HashKey
 }
 
 func (i *Integer) HashKey() HashKey {
-    return HashKey{ Type: INTEGER_OBJ, Value: uint64(i.Value) }
+	return HashKey{Type: INTEGER_OBJ, Value: uint64(i.Value)}
 }
 
 func (b *BooleanObject) HashKey() HashKey {
-    var value uint64
+	var value uint64
 
-    if b.Value {
-        value = 1
-    } else {
-        value = 0
-    }
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
 
-    return HashKey{ Type: STRING_OBJ, Value: value }
+	return HashKey{Type: STRING_OBJ, Value: value}
 }
 
 func (s *String) HashKey() HashKey {
-    h := fnv.New64a()
-    h.Write([]byte(s.Value))
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
 
-    return HashKey{ Type: STRING_OBJ, Value: h.Sum64() }
+	return HashKey{Type: STRING_OBJ, Value: h.Sum64()}
 }
 
 type DictPair struct {
-    Key Object
-    Value Object
+	Key   Object
+	Value Object
 }
 
 type Dict struct {
-    Values map[HashKey]DictPair
+	Values map[HashKey]DictPair
 }
 
 func (d *Dict) Type() ObjectType {
-    return DICT_OBJ
+	return DICT_OBJ
 }
 
 func (d *Dict) Inspect() string {
-    var result bytes.Buffer
+	var result bytes.Buffer
 
-    result.WriteString("{")
+	result.WriteString("{")
 
-    items := []string{}
+	items := []string{}
 
-    for _, pair := range d.Values {
-        items = append(
-            items, 
-            fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()),
-        )
-    }
+	for _, pair := range d.Values {
+		items = append(
+			items,
+			fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()),
+		)
+	}
 
-    result.WriteString(strings.Join(items, ", "))
-    result.WriteString("}")
+	result.WriteString(strings.Join(items, ", "))
+	result.WriteString("}")
 
-    return result.String()
+	return result.String()
 }

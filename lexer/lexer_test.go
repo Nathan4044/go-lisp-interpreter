@@ -95,10 +95,10 @@ func TestLexer(t *testing.T) {
 			Type:    token.LBRACE,
 			Literal: "{",
 		},
-        {
-            Type: token.NUM,
-            Literal: "12.4",
-        },
+		{
+			Type:    token.NUM,
+			Literal: "12.4",
+		},
 		{
 			Type:    token.RBRACE,
 			Literal: "}",

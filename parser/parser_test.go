@@ -161,18 +161,18 @@ func TestParseDict(t *testing.T) {
 			`(dict)`,
 			`(dict)`,
 		},
-        {
-            `(dict a b)`,
-            `(dict a b)`,
-        },
+		{
+			`(dict a b)`,
+			`(dict a b)`,
+		},
 		{
 			`{}`,
 			`(dict)`,
 		},
-        {
-            `{a b}`,
-            `(dict a b)`,
-        },
+		{
+			`{a b}`,
+			`(dict a b)`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -180,10 +180,10 @@ func TestParseDict(t *testing.T) {
 		p := New(l)
 		program := p.ParseProgram()
 
-        if len(p.Errors) > 0 {
-            t.Fatalf("Parser created errors:\n%s",
-                strings.Join(p.Errors, "\n"))
-        }
+		if len(p.Errors) > 0 {
+			t.Fatalf("Parser created errors:\n%s",
+				strings.Join(p.Errors, "\n"))
+		}
 
 		if len(program.Expressions) != 1 {
 			t.Fatalf("Expected %d expressions. got=%d%+v", 1, len(program.Expressions), program.Expressions)

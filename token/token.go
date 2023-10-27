@@ -12,8 +12,8 @@ const (
 
 	LPAREN = "lparen"
 	RPAREN = "rparen"
-    LBRACE = "lbrace"
-    RBRACE = "rbrace"
+	LBRACE = "lbrace"
+	RBRACE = "rbrace"
 
 	QUOTE = "quote"
 )

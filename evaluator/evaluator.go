@@ -26,8 +26,8 @@ func eval(e ast.Expression, env *object.Environment) object.Object {
 	switch e := e.(type) {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: e.Value}
-    case *ast.FloatLiteral:
-        return &object.Float{Value: e.Value}
+	case *ast.FloatLiteral:
+		return &object.Float{Value: e.Value}
 	case *ast.StringLiteral:
 		return &object.String{Value: e.Value}
 	case *ast.Identifier:
@@ -92,13 +92,13 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	lambdaEnv := object.NewEnvironment(lambda.Env)
 
 	for i, arg := range args {
-        obj := eval(arg, env)
+		obj := eval(arg, env)
 
-        err, ok := obj.(*object.ErrorObject)
+		err, ok := obj.(*object.ErrorObject)
 
-        if ok {
-            return err
-        }
+		if ok {
+			return err
+		}
 
 		lambdaEnv.Set(
 			lambda.Args[i],
@@ -109,13 +109,13 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	lastIndex := len(lambda.Body) - 1
 
 	for _, exp := range lambda.Body[:lastIndex] {
-        obj := eval(exp, lambdaEnv)
+		obj := eval(exp, lambdaEnv)
 
-        err, ok := obj.(*object.ErrorObject)
-        
-        if ok {
-            return err
-        }
+		err, ok := obj.(*object.ErrorObject)
+
+		if ok {
+			return err
+		}
 	}
 
 	return eval(lambda.Body[lastIndex], lambdaEnv)

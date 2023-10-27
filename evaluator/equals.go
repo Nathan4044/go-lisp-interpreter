@@ -7,17 +7,17 @@ import (
 
 func numsEqual(first float64, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
-        var num float64
+		var num float64
 		obj := eval(arg, env)
 
-        switch obj := obj.(type) {
-        case *object.Integer:
-            num = float64(obj.Value)
-        case *object.Float:
-            num = obj.Value
-        default:
-            return FALSE
-        }
+		switch obj := obj.(type) {
+		case *object.Integer:
+			num = float64(obj.Value)
+		case *object.Float:
+			num = obj.Value
+		default:
+			return FALSE
+		}
 
 		if num != first {
 			return FALSE

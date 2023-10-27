@@ -14,7 +14,7 @@ func badTypeError(fn string, obj object.Object) *object.ErrorObject {
 
 func badKeyError(obj object.Object) *object.ErrorObject {
 	err := fmt.Sprintf("attempted to use unsupported type as dict key %s (%s)",
-        obj.Type(), obj.Inspect())
+		obj.Type(), obj.Inspect())
 
 	return &object.ErrorObject{Error: err}
 }
