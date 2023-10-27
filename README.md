@@ -14,7 +14,8 @@ Build an artefact with `go build` to produce a binary of the project.
 
 Run the repl with `./lisp`, implemented commands are:
 ```
-+, *, -, /, rem, =, <, >, not, and, or, list, dict, first, rest, len, push, push!, pop!, if, def, lambda, str, print, get, set
++, *, -, /, rem, =, <, >, not, and, or, list, dict, first, rest,
+len, push, push!, pop!, if, def, lambda, str, print, get, set
 ```
 
 Run the interpreter with a source file by passing the file as an argument: `./lisp [file]`.
