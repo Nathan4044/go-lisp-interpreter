@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"bytes"
+	"fmt"
 	"lisp/token"
 )
 
@@ -126,6 +127,12 @@ func (l *Lexer) readString() token.Token {
 	var output bytes.Buffer
 
 	for l.ch != '"' {
+        if l.ch == 0 {
+            return token.Token{
+                Type: token.ILLEGAL,
+                Literal: fmt.Sprintf("unterminated string: \"%s", output.String()),
+            }
+        }
 		output.WriteByte(l.ch)
 		l.readChar()
 	}
