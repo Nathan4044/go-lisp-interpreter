@@ -12,18 +12,16 @@ var (
 	NULL  = &object.Null{}
 )
 
-func Evaluate(program ast.Program, env *object.Environment) object.Object {
-	var result object.Object
-
-	for _, expression := range program.Expressions {
-		result = eval(expression, env)
-	}
-
-	return result
-}
-
-func eval(e ast.Expression, env *object.Environment) object.Object {
+func Evaluate(e ast.Expression, env *object.Environment) object.Object {
 	switch e := e.(type) {
+    case *ast.Program:
+	    var result object.Object
+
+	    for _, expression := range e.Expressions {
+	    	result = Evaluate(expression, env)
+	    }
+
+	    return result
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: e.Value}
 	case *ast.FloatLiteral:
@@ -44,7 +42,7 @@ func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Obj
 		return &object.List{}
 	}
 
-	fnExpression := eval(e.Fn, env)
+	fnExpression := Evaluate(e.Fn, env)
 
 	switch fnExpression := fnExpression.(type) {
 	case *object.FunctionObject:
@@ -92,7 +90,7 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	lambdaEnv := object.NewEnvironment(lambda.Env)
 
 	for i, arg := range args {
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 
 		err, ok := obj.(*object.ErrorObject)
 
@@ -102,14 +100,14 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 
 		lambdaEnv.Set(
 			lambda.Args[i],
-			eval(arg, env),
+			Evaluate(arg, env),
 		)
 	}
 
 	lastIndex := len(lambda.Body) - 1
 
 	for _, exp := range lambda.Body[:lastIndex] {
-		obj := eval(exp, lambdaEnv)
+		obj := Evaluate(exp, lambdaEnv)
 
 		err, ok := obj.(*object.ErrorObject)
 
@@ -118,5 +116,5 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 		}
 	}
 
-	return eval(lambda.Body[lastIndex], lambdaEnv)
+	return Evaluate(lambda.Body[lastIndex], lambdaEnv)
 }

@@ -8,7 +8,7 @@ import (
 func numsEqual(first float64, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
 		var num float64
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 
 		switch obj := obj.(type) {
 		case *object.Integer:
@@ -29,7 +29,7 @@ func numsEqual(first float64, env *object.Environment, rest ...ast.Expression) *
 
 func stringsEqual(first *object.String, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 		str, ok := obj.(*object.String)
 
 		if !ok {
@@ -46,7 +46,7 @@ func stringsEqual(first *object.String, env *object.Environment, rest ...ast.Exp
 
 func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 		boolean, ok := obj.(*object.BooleanObject)
 
 		if !ok {
@@ -63,7 +63,7 @@ func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...ast
 
 func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 		lambda, ok := obj.(*object.LambdaObject)
 
 		if !ok {
@@ -80,7 +80,7 @@ func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...a
 
 func functionsEqual(first *object.FunctionObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := eval(arg, env)
+		obj := Evaluate(arg, env)
 		function, ok := obj.(*object.FunctionObject)
 
 		if !ok {

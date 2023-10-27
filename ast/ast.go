@@ -28,6 +28,8 @@ func (p *Program) String() string {
 	return output.String()
 }
 
+func (p *Program) expression() {}
+
 type Identifier struct {
 	Token token.Token
 }

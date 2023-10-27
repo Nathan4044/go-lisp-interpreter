@@ -24,7 +24,7 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-func (p *Parser) ParseProgram() ast.Program {
+func (p *Parser) ParseProgram() *ast.Program {
 	expressions := []ast.Expression{}
 
 	p.readToken()
@@ -32,7 +32,7 @@ func (p *Parser) ParseProgram() ast.Program {
 		expressions = append(expressions, p.parseExpression())
 	}
 
-	return ast.Program{
+	return &ast.Program{
 		Expressions: expressions,
 	}
 }

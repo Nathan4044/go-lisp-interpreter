@@ -14,7 +14,7 @@ func makeBuitins() map[string]object.Function {
 			var result float64 = 0
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -37,7 +37,7 @@ func makeBuitins() map[string]object.Function {
 			var result float64 = 1
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -64,7 +64,7 @@ func makeBuitins() map[string]object.Function {
 			var nums []float64
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -104,7 +104,7 @@ func makeBuitins() map[string]object.Function {
 			var nums []float64
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -146,7 +146,7 @@ func makeBuitins() map[string]object.Function {
 			var ints [2]int64
 
 			for i, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 				switch obj := obj.(type) {
 				case *object.Integer:
 					ints[i] = obj.Value
@@ -171,7 +171,7 @@ func makeBuitins() map[string]object.Function {
 				return TRUE
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 
 			switch obj := obj.(type) {
 			case *object.Integer:
@@ -198,7 +198,7 @@ func makeBuitins() map[string]object.Function {
 			nums := []float64{}
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -226,7 +226,7 @@ func makeBuitins() map[string]object.Function {
 			nums := []float64{}
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				switch obj := obj.(type) {
 				case *object.Integer:
@@ -251,7 +251,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("not", "1", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			if evalTruthy(obj) {
 				return FALSE
 			}
@@ -259,7 +259,7 @@ func makeBuitins() map[string]object.Function {
 		},
 		"and": func(env *object.Environment, args ...ast.Expression) object.Object {
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 				if !evalTruthy(obj) {
 					return FALSE
 				}
@@ -269,7 +269,7 @@ func makeBuitins() map[string]object.Function {
 		},
 		"or": func(env *object.Environment, args ...ast.Expression) object.Object {
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 
 				err, ok := obj.(*object.ErrorObject)
 
@@ -288,7 +288,7 @@ func makeBuitins() map[string]object.Function {
 			items := []object.Object{}
 
 			for _, arg := range args {
-				items = append(items, eval(arg, env))
+				items = append(items, Evaluate(arg, env))
 			}
 
 			return &object.List{
@@ -303,8 +303,8 @@ func makeBuitins() map[string]object.Function {
 			items := map[object.HashKey]object.DictPair{}
 
 			for i := 0; i < len(args)-1; i += 2 {
-				obj := eval(args[i], env)
-				value := eval(args[i+1], env)
+				obj := Evaluate(args[i], env)
+				value := Evaluate(args[i+1], env)
 
 				key, ok := obj.(object.Hashable)
 
@@ -333,7 +333,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("first", "1", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -347,7 +347,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("rest", "1", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -363,7 +363,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("len", "1", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -377,7 +377,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("push", "2", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -387,7 +387,7 @@ func makeBuitins() map[string]object.Function {
 				}
 			}
 
-			obj = eval(args[1], env)
+			obj = Evaluate(args[1], env)
 
 			err, ok := obj.(*object.ErrorObject)
 
@@ -409,7 +409,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("push", "2", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -419,7 +419,7 @@ func makeBuitins() map[string]object.Function {
 				}
 			}
 
-			obj = eval(args[1], env)
+			obj = Evaluate(args[1], env)
 
 			err, ok := obj.(*object.ErrorObject)
 
@@ -436,7 +436,7 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("pop", "1", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			list, ok := obj.(*object.List)
 
 			if !ok {
@@ -457,16 +457,16 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("if", "2 or 3", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 
 			condition := evalTruthy(obj)
 
 			if condition {
-				return eval(args[1], env)
+				return Evaluate(args[1], env)
 			}
 
 			if len(args) == 3 {
-				return eval(args[2], env)
+				return Evaluate(args[2], env)
 			}
 
 			return NULL
@@ -483,7 +483,7 @@ func makeBuitins() map[string]object.Function {
 				return &object.ErrorObject{Error: err}
 			}
 
-			val := eval(args[1], env)
+			val := Evaluate(args[1], env)
 
 			env.Set(ident.String(), val)
 
@@ -535,7 +535,7 @@ func makeBuitins() map[string]object.Function {
 			objects := []object.Object{}
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 				objects = append(objects, obj)
 			}
 
@@ -553,7 +553,7 @@ func makeBuitins() map[string]object.Function {
 			objects := []string{}
 
 			for _, arg := range args {
-				obj := eval(arg, env)
+				obj := Evaluate(arg, env)
 				objects = append(objects, obj.Inspect())
 			}
 
@@ -566,7 +566,7 @@ func makeBuitins() map[string]object.Function {
 				wrongNumOfArgsError("get", "2", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			dict, ok := obj.(*object.Dict)
 
 			if !ok {
@@ -582,7 +582,7 @@ func makeBuitins() map[string]object.Function {
 				}
 			}
 
-			obj = eval(args[1], env)
+			obj = Evaluate(args[1], env)
 			key, ok := obj.(object.Hashable)
 
 			if !ok {
@@ -608,7 +608,7 @@ func makeBuitins() map[string]object.Function {
 				wrongNumOfArgsError("get", "3", len(args))
 			}
 
-			obj := eval(args[0], env)
+			obj := Evaluate(args[0], env)
 			dict, ok := obj.(*object.Dict)
 
 			if !ok {
@@ -624,7 +624,7 @@ func makeBuitins() map[string]object.Function {
 				}
 			}
 
-			obj = eval(args[1], env)
+			obj = Evaluate(args[1], env)
 			key, ok := obj.(object.Hashable)
 
 			if !ok {
@@ -637,7 +637,7 @@ func makeBuitins() map[string]object.Function {
 				badKeyError(obj)
 			}
 
-			value := eval(args[2], env)
+			value := Evaluate(args[2], env)
 
 			dict.Values[key.HashKey()] = object.DictPair{
 				Key:   obj,
