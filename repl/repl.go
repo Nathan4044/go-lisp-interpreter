@@ -30,7 +30,7 @@ func Start(in io.Reader, out io.Writer) {
 
         if len(errors) > 0 {
             for _, err := range errors {
-                fmt.Fprintf(out, err)
+                fmt.Fprintln(out, err)
             }
         } else {
             fmt.Fprintln(out, result.Inspect())
