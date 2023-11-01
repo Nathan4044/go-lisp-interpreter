@@ -5,13 +5,9 @@ import (
 	"lisp/token"
 )
 
-type node interface {
-	String() string
-}
-
 type Expression interface {
-	node
 	expression()
+	String() string
 }
 
 type Program struct {
