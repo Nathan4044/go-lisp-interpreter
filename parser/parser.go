@@ -64,6 +64,7 @@ func (p *Parser) parseExpression() ast.Expression {
 
 		errMsg := fmt.Sprintf("%s is invalid number", p.curToken.Literal)
 		p.Errors = append(p.Errors, errMsg)
+        p.readToken()
 		return nil
 	case token.STRING:
 		string := &ast.StringLiteral{
