@@ -383,22 +383,26 @@ func makeBuitins() map[string]object.Function {
 				return wrongNumOfArgsError("push", "2", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
+			listObj := Evaluate(args[0], env)
 
-			if obj.Type() != object.LIST_OBJ {
+			if listObj.Type() != object.LIST_OBJ {
+                if listObj.Type() == object.ERROR_OBJ {
+                    return listObj
+                }
+
 				return &object.ErrorObject{
 					Error: fmt.Sprintf("first argument to concat should be list. got=%T(%+v)",
-						obj, obj),
+						listObj, listObj),
 				}
 			}
 
-			obj = Evaluate(args[1], env)
+            obj := Evaluate(args[1], env)
 
 			if obj.Type() == object.ERROR_OBJ {
 				return obj
 			}
 
-			list := obj.(*object.List)
+			list := listObj.(*object.List)
 			newList := make([]object.Object, len(list.Values))
 
             copy(newList, list.Values)
