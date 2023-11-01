@@ -21,7 +21,7 @@ const (
 	ERROR_OBJ    = "ERROR"
 )
 
-type Function func(env *Environment, args ...ast.Expression) Object
+type Function func(env *Environment, args ...Object) Object
 
 type ObjectType string
 

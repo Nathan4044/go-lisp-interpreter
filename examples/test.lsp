@@ -12,7 +12,7 @@
 (def rangeBuilder (lambda (lst start end) (if (= start end) lst (rangeBuilder (push! lst start) (+ 1 start) end))))
 (def range (lambda (n) (rangeBuilder '() 0 n)))
 
-(def lst (range 100000))
+(def lst (range 1000))
 
 (printList lst)
-(printList (map lst (lambda (n) (* n n))))
+(printList (map lst (lambda (n) (- (* n n) (/ n 2)))))

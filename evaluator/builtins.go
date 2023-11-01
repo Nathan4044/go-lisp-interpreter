@@ -3,26 +3,21 @@ package evaluator
 import (
 	"bytes"
 	"fmt"
-	"lisp/ast"
 	"lisp/object"
 	"strings"
 )
 
 func makeBuitins() map[string]object.Function {
 	return map[string]object.Function{
-		"+": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"+": func(env *object.Environment, args ...object.Object) object.Object {
 			var result float64 = 0
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch obj := arg.(type) {
 				case *object.Integer:
 					result += float64(obj.Value)
 				case *object.Float:
 					result += obj.Value
-				case *object.ErrorObject:
-					return obj
 				default:
 					return badTypeError("+", obj)
 				}
@@ -33,19 +28,15 @@ func makeBuitins() map[string]object.Function {
 			}
 			return &object.Float{Value: result}
 		},
-		"*": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"*": func(env *object.Environment, args ...object.Object) object.Object {
 			var result float64 = 1
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch obj := arg.(type) {
 				case *object.Integer:
 					result *= float64(obj.Value)
 				case *object.Float:
 					result *= obj.Value
-				case *object.ErrorObject:
-					return obj
 				default:
 					return badTypeError("*", obj)
 				}
@@ -56,7 +47,7 @@ func makeBuitins() map[string]object.Function {
 			}
 			return &object.Float{Value: result}
 		},
-		"-": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"-": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) == 0 {
 				return noArgsError("-")
 			}
@@ -64,15 +55,11 @@ func makeBuitins() map[string]object.Function {
 			var nums []float64
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch obj := arg.(type) {
 				case *object.Integer:
 					nums = append(nums, float64(obj.Value))
 				case *object.Float:
 					nums = append(nums, obj.Value)
-				case *object.ErrorObject:
-					return obj
 				default:
 					return badTypeError("-", obj)
 				}
@@ -96,7 +83,7 @@ func makeBuitins() map[string]object.Function {
 				return &object.Float{Value: result}
 			}
 		},
-		"/": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"/": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) == 0 {
 				return noArgsError("/")
 			}
@@ -104,15 +91,11 @@ func makeBuitins() map[string]object.Function {
 			var nums []float64
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch obj := arg.(type) {
 				case *object.Integer:
 					nums = append(nums, float64(obj.Value))
 				case *object.Float:
 					nums = append(nums, obj.Value)
-				case *object.ErrorObject:
-					return obj
 				default:
 					return badTypeError("/", obj)
 				}
@@ -138,7 +121,7 @@ func makeBuitins() map[string]object.Function {
 				return &object.Float{Value: result}
 			}
 		},
-		"rem": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"rem": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return wrongNumOfArgsError("rem", "2", len(args))
 			}
@@ -146,12 +129,9 @@ func makeBuitins() map[string]object.Function {
 			var ints [2]int64
 
 			for i, arg := range args {
-				obj := Evaluate(arg, env)
-				switch obj := obj.(type) {
+				switch obj := arg.(type) {
 				case *object.Integer:
 					ints[i] = obj.Value
-				case *object.ErrorObject:
-					return obj
 				default:
 					return badTypeError("/", obj)
 				}
@@ -166,12 +146,12 @@ func makeBuitins() map[string]object.Function {
 
 			return &object.Integer{Value: ints[0] % ints[1]}
 		},
-		"=": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"=": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) == 0 {
 				return TRUE
 			}
 
-			obj := Evaluate(args[0], env)
+            obj := args[0]
 
 			switch obj := obj.(type) {
 			case *object.Integer:
@@ -190,7 +170,7 @@ func makeBuitins() map[string]object.Function {
 				return badTypeError("=", obj)
 			}
 		},
-		"<": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"<": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) == 0 {
 				return wrongNumOfArgsError("<", "at least 1", 0)
 			}
@@ -198,15 +178,13 @@ func makeBuitins() map[string]object.Function {
 			nums := []float64{}
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch arg := arg.(type) {
 				case *object.Integer:
-					nums = append(nums, float64(obj.Value))
+					nums = append(nums, float64(arg.Value))
 				case *object.Float:
-					nums = append(nums, obj.Value)
+					nums = append(nums, arg.Value)
 				default:
-					return badTypeError("<", obj)
+					return badTypeError("<", arg)
 				}
 			}
 
@@ -218,7 +196,7 @@ func makeBuitins() map[string]object.Function {
 
 			return TRUE
 		},
-		">": func(env *object.Environment, args ...ast.Expression) object.Object {
+		">": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) == 0 {
 				return wrongNumOfArgsError(">", "at least 1", 0)
 			}
@@ -226,15 +204,13 @@ func makeBuitins() map[string]object.Function {
 			nums := []float64{}
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-				switch obj := obj.(type) {
+				switch arg := arg.(type) {
 				case *object.Integer:
-					nums = append(nums, float64(obj.Value))
+					nums = append(nums, float64(arg.Value))
 				case *object.Float:
-					nums = append(nums, obj.Value)
+					nums = append(nums, arg.Value)
 				default:
-					return badTypeError(">", obj)
+					return badTypeError(">", arg)
 				}
 			}
 
@@ -246,64 +222,53 @@ func makeBuitins() map[string]object.Function {
 
 			return TRUE
 		},
-		"not": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"not": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return wrongNumOfArgsError("not", "1", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
-
-            if obj.Type() == object.ERROR_OBJ {
-                return obj
+            if args[0].Type() == object.ERROR_OBJ {
+                return args[0]
             }
 
-			if evalTruthy(obj) {
+			if evalTruthy(args[0]) {
 				return FALSE
 			}
 			return TRUE
 		},
-		"and": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"and": func(env *object.Environment, args ...object.Object) object.Object {
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-                if obj.Type() == object.ERROR_OBJ {
-                    return obj
+                if arg.Type() == object.ERROR_OBJ {
+                    return arg
                 }
 
-				if !evalTruthy(obj) {
+				if !evalTruthy(arg) {
 					return FALSE
 				}
 			}
 
 			return TRUE
 		},
-		"or": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"or": func(env *object.Environment, args ...object.Object) object.Object {
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-                if obj.Type() == object.ERROR_OBJ {
-					return obj
+                if arg.Type() == object.ERROR_OBJ {
+					return arg
 				}
 
-				if evalTruthy(obj) {
+				if evalTruthy(arg) {
 					return TRUE
 				}
 			}
 
 			return FALSE
 		},
-		"list": func(env *object.Environment, args ...ast.Expression) object.Object {
-			items := []object.Object{}
-
-			for _, arg := range args {
-				items = append(items, Evaluate(arg, env))
-			}
-
+		"list": func(env *object.Environment, args ...object.Object) object.Object {
+            // Note: not sure if args need to be copied to new slice or not.
 			return &object.List{
-				Values: items,
+				Values: args,
 			}
 		},
-		"dict": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"dict": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args)%2 != 0 {
 				return wrongNumOfArgsError("dict", "even number", len(args))
 			}
@@ -311,16 +276,12 @@ func makeBuitins() map[string]object.Function {
 			items := map[object.HashKey]object.DictPair{}
 
 			for i := 0; i < len(args)-1; i += 2 {
-				obj := Evaluate(args[i], env)
-				value := Evaluate(args[i+1], env)
+				obj := args[i]
+				value := args[i+1]
 
 				key, ok := obj.(object.Hashable)
 
 				if !ok {
-                    if obj.Type() == object.ERROR_OBJ {
-						return obj
-					}
-
 					return badKeyError(obj)
 				}
 
@@ -334,121 +295,101 @@ func makeBuitins() map[string]object.Function {
 				Values: items,
 			}
 		},
-		"first": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"first": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return wrongNumOfArgsError("first", "1", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
-
-			if obj.Type() != object.LIST_OBJ {
-				return badTypeError("first", obj)
+			if args[0].Type() != object.LIST_OBJ {
+				return badTypeError("first", args[0])
 			}
 
-			list := obj.(*object.List)
+			list := args[0].(*object.List)
 			return list.Values[0]
 		},
-		"rest": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"rest": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return wrongNumOfArgsError("rest", "1", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
-
-			if obj.Type() != object.LIST_OBJ {
-				return badTypeError("rest", obj)
+			if args[0].Type() != object.LIST_OBJ {
+				return badTypeError("rest", args[0])
 			}
 
-			list := obj.(*object.List)
+			list := args[0].(*object.List)
 			return &object.List{
 				Values: list.Values[1:],
 			}
 		},
-		"len": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"len": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return wrongNumOfArgsError("len", "1", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
-
-			if obj.Type() != object.LIST_OBJ {
-				return badTypeError("len", obj)
+			if args[0].Type() != object.LIST_OBJ {
+				return badTypeError("len", args[0])
 			}
 
-			list := obj.(*object.List)
+			list := args[0].(*object.List)
 			return &object.Integer{Value: int64(len(list.Values))}
 		},
-		"push": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"push": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return wrongNumOfArgsError("push", "2", len(args))
 			}
 
-			listObj := Evaluate(args[0], env)
-
-			if listObj.Type() != object.LIST_OBJ {
-                if listObj.Type() == object.ERROR_OBJ {
-                    return listObj
-                }
-
+			if args[0].Type() != object.LIST_OBJ {
 				return &object.ErrorObject{
 					Error: fmt.Sprintf("first argument to concat should be list. got=%T(%+v)",
-						listObj, listObj),
+						args[0], args[0]),
 				}
 			}
 
-            obj := Evaluate(args[1], env)
+			list := args[0].(*object.List)
 
-			if obj.Type() == object.ERROR_OBJ {
-				return obj
-			}
-
-			list := listObj.(*object.List)
 			newList := make([]object.Object, len(list.Values))
-
             copy(newList, list.Values)
-			newList = append(newList, obj)
+
+			newList = append(newList, args[1])
 
 			return &object.List{Values: newList}
 		},
-		"push!": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"push!": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				return wrongNumOfArgsError("push", "2", len(args))
 			}
 
-			listObj := Evaluate(args[0], env)
-
-			if listObj.Type() != object.LIST_OBJ {
+			if args[0].Type() != object.LIST_OBJ {
 				return &object.ErrorObject{
 					Error: fmt.Sprintf("first argument to concat should be list. got=%T(%+v)",
-						listObj, listObj),
+						args[0], args[0]),
 				}
 			}
 
-            obj := Evaluate(args[1], env)
-
-			if obj.Type() == object.ERROR_OBJ {
-				return obj
-			}
-
-			list := listObj.(*object.List)
-			list.Values = append(list.Values, obj)
+			list := args[0].(*object.List)
+			list.Values = append(list.Values, args[1])
 
 			return list
 		},
-		"pop!": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"pop!": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 1 {
 				return wrongNumOfArgsError("pop", "1", len(args))
 			}
 
-			obj := Evaluate(args[0], env)
-			if obj.Type() != object.LIST_OBJ {
+			if args[0].Type() != object.LIST_OBJ {
 				return &object.ErrorObject{
 					Error: fmt.Sprintf("argument to pop should be list. got=%T(%+v)",
-						obj, obj),
+						args[0], args[0]),
 				}
 			}
 
-			list := obj.(*object.List)
+			list := args[0].(*object.List)
+
+            if len(list.Values) == 0 {
+                return &object.ErrorObject{
+                    Error: "attemped to pop from empty list",
+                }
+            }
 
 			result := list.Values[len(list.Values)-1]
 
@@ -456,165 +397,49 @@ func makeBuitins() map[string]object.Function {
 
 			return result
 		},
-		"if": func(env *object.Environment, args ...ast.Expression) object.Object {
-			if len(args) < 2 || len(args) > 3 {
-				return wrongNumOfArgsError("if", "2 or 3", len(args))
-			}
-
-			obj := Evaluate(args[0], env)
-
-            if obj.Type() == object.ERROR_OBJ {
-                return obj
-            }
-
-			condition := evalTruthy(obj)
-
-			if condition {
-				return Evaluate(args[1], env)
-			}
-
-			if len(args) == 3 {
-				return Evaluate(args[2], env)
-			}
-
-			return NULL
-		},
-		"def": func(env *object.Environment, args ...ast.Expression) object.Object {
-			if len(args) != 2 {
-				return wrongNumOfArgsError("def", "2", len(args))
-			}
-
-			ident, ok := args[0].(*ast.Identifier)
-
-			if !ok {
-				err := fmt.Sprintf("cannot assign to non-identifier %s", args[0].String())
-				return &object.ErrorObject{Error: err}
-			}
-
-			val := Evaluate(args[1], env)
-
-            if val.Type() != object.ERROR_OBJ {
-			    env.Set(ident.String(), val)
-            }
-
-
-			return val
-		},
-		"lambda": func(env *object.Environment, args ...ast.Expression) object.Object {
-			if len(args) < 2 {
-				return wrongNumOfArgsError("lambda", "at least 2", len(args))
-			}
-
-			argsList, ok := args[0].(*ast.SExpression)
-
-			if !ok {
-				err := fmt.Sprintf("lambda requires list of args, got %s", args[0].String())
-				return &object.ErrorObject{Error: err}
-			}
-
-			lambdaArgs := []string{}
-
-			if argsList.Fn != nil {
-				arg, ok := argsList.Fn.(*ast.Identifier)
-
-				if !ok {
-					err := fmt.Sprintf("lambda function must be identifier, got %s", argsList.Fn.String())
-					return &object.ErrorObject{Error: err}
-				}
-
-				lambdaArgs = append(lambdaArgs, arg.String())
-			}
-
-			for _, lambdaArg := range argsList.Args {
-				arg, ok := lambdaArg.(*ast.Identifier)
-
-				if !ok {
-					err := fmt.Sprintf("lambda args must be identifiers, got %s", arg)
-					return &object.ErrorObject{Error: err}
-				}
-
-				lambdaArgs = append(lambdaArgs, arg.String())
-			}
-
-			return &object.LambdaObject{
-				Args: lambdaArgs,
-				Env:  env,
-				Body: args[1:],
-			}
-		},
-		"str": func(env *object.Environment, args ...ast.Expression) object.Object {
-			objects := []object.Object{}
-
-			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-                if obj.Type() == object.ERROR_OBJ {
-                    return obj
-                }
-
-				objects = append(objects, obj)
-			}
-
+		"str": func(env *object.Environment, args ...object.Object) object.Object {
 			var result bytes.Buffer
 
-			for _, obj := range objects {
-				result.WriteString(obj.Inspect())
+			for _, arg := range args {
+				result.WriteString(arg.Inspect())
 			}
 
 			return &object.String{
 				Value: result.String(),
 			}
 		},
-		"print": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"print": func(env *object.Environment, args ...object.Object) object.Object {
 			objects := []string{}
 
 			for _, arg := range args {
-				obj := Evaluate(arg, env)
-
-                if obj.Type() == object.ERROR_OBJ {
-                    return obj
-                }
-
-				objects = append(objects, obj.Inspect())
+				objects = append(objects, arg.Inspect())
 			}
 
 			fmt.Println(strings.Join(objects, " "))
 
 			return NULL
 		},
-		"get": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"get": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 2 {
 				wrongNumOfArgsError("get", "2", len(args))
 			}
 
-			dictObj := Evaluate(args[0], env)
+            dictObj := args[0]
+            keyObj := args[1]
 
 			if dictObj.Type() != object.DICT_OBJ {
-				errobj, ok := dictObj.(*object.ErrorObject)
-
-				if ok {
-					return errobj
-				}
-
 				err := fmt.Sprintf("attempted to get from %s(%s) instead of dict", dictObj.Type(), dictObj.Inspect())
 				return &object.ErrorObject{
 					Error: err,
 				}
 			}
+            dict := dictObj.(*object.Dict)
 
-            obj := Evaluate(args[1], env)
-
-            if obj.Type() == object.ERROR_OBJ {
-                return obj
-            }
-
-			key, ok := obj.(object.Hashable)
-
+			key, ok := keyObj.(object.Hashable)
 			if !ok {
-				badKeyError(obj)
+				badKeyError(keyObj)
 			}
 
-			dict := dictObj.(*object.Dict)
 			result, ok := dict.Values[key.HashKey()]
 
 			if !ok {
@@ -623,29 +448,21 @@ func makeBuitins() map[string]object.Function {
 
 			return result.Value
 		},
-		"set": func(env *object.Environment, args ...ast.Expression) object.Object {
+		"set": func(env *object.Environment, args ...object.Object) object.Object {
 			if len(args) != 3 {
 				wrongNumOfArgsError("get", "3", len(args))
 			}
 
-			dictObj := Evaluate(args[0], env)
+			dictObj := args[0]
+            keyObj := args[1]
+            value := args[2]
 
 			if dictObj.Type() != object.DICT_OBJ {
-				if dictObj.Type() == object.ERROR_OBJ {
-					return dictObj
-				}
-
 				err := fmt.Sprintf("attempted to get from %s(%s) instead of dict", dictObj.Type(), dictObj.Inspect())
 				return &object.ErrorObject{
 					Error: err,
 				}
 			}
-
-            keyObj := Evaluate(args[1], env)
-
-            if keyObj.Type() == object.ERROR_OBJ {
-                return keyObj
-            }
 
 			key, ok := keyObj.(object.Hashable)
 
@@ -653,11 +470,6 @@ func makeBuitins() map[string]object.Function {
 				badKeyError(keyObj)
 			}
 
-			value := Evaluate(args[2], env)
-
-            if value.Type() == object.ERROR_OBJ {
-                return value
-            }
 
 			dict := dictObj.(*object.Dict)
 			dict.Values[key.HashKey()] = object.DictPair{

@@ -1,16 +1,14 @@
 package evaluator
 
 import (
-	"lisp/ast"
 	"lisp/object"
 )
 
-func numsEqual(first float64, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
+func numsEqual(first float64, env *object.Environment, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		var num float64
-		obj := Evaluate(arg, env)
 
-		switch obj := obj.(type) {
+		switch obj := arg.(type) {
 		case *object.Integer:
 			num = float64(obj.Value)
 		case *object.Float:
@@ -27,10 +25,9 @@ func numsEqual(first float64, env *object.Environment, rest ...ast.Expression) *
 	return TRUE
 }
 
-func stringsEqual(first *object.String, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
+func stringsEqual(first *object.String, env *object.Environment, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := Evaluate(arg, env)
-		str, ok := obj.(*object.String)
+		str, ok := arg.(*object.String)
 
 		if !ok {
 			return FALSE
@@ -44,10 +41,9 @@ func stringsEqual(first *object.String, env *object.Environment, rest ...ast.Exp
 	return TRUE
 }
 
-func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
+func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := Evaluate(arg, env)
-		boolean, ok := obj.(*object.BooleanObject)
+		boolean, ok := arg.(*object.BooleanObject)
 
 		if !ok {
 			return FALSE
@@ -61,10 +57,9 @@ func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...ast
 	return TRUE
 }
 
-func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
+func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := Evaluate(arg, env)
-		lambda, ok := obj.(*object.LambdaObject)
+		lambda, ok := arg.(*object.LambdaObject)
 
 		if !ok {
 			return FALSE
@@ -78,10 +73,9 @@ func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...a
 	return TRUE
 }
 
-func functionsEqual(first *object.FunctionObject, env *object.Environment, rest ...ast.Expression) *object.BooleanObject {
+func functionsEqual(first *object.FunctionObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
-		obj := Evaluate(arg, env)
-		function, ok := obj.(*object.FunctionObject)
+		function, ok := arg.(*object.FunctionObject)
 
 		if !ok {
 			return FALSE
