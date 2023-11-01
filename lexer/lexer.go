@@ -98,7 +98,7 @@ func (l *Lexer) peekChar() byte {
 func (l *Lexer) readNumber() token.Token {
 	start := l.pos
 
-	for isNumber(l.ch) || l.ch == '.' {
+	for !isWhitespace(l.ch) && !isReservedChar(l.ch) {
 		l.readChar()
 	}
 
