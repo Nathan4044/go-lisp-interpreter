@@ -92,10 +92,8 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	for i, arg := range args {
 		obj := Evaluate(arg, env)
 
-		err, ok := obj.(*object.ErrorObject)
-
-		if ok {
-			return err
+		if obj.Type() == object.ERROR_OBJ {
+			return obj
 		}
 
 		lambdaEnv.Set(
@@ -109,10 +107,8 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	for _, exp := range lambda.Body[:lastIndex] {
 		obj := Evaluate(exp, lambdaEnv)
 
-		err, ok := obj.(*object.ErrorObject)
-
-		if ok {
-			return err
+		if obj.Type() == object.ERROR_OBJ {
+			return obj
 		}
 	}
 
