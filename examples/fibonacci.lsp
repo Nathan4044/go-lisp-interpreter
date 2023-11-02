@@ -1,5 +1,3 @@
-(def second (lambda (l) (first (rest l))))
-
 (def rangeBuilder (lambda (lst start end) (if (= start end) lst (rangeBuilder (push! lst start) (+ 1 start) end))))
 (def range (lambda (n) (rangeBuilder '() 0 n)))
 
