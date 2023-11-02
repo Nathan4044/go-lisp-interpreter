@@ -483,17 +483,11 @@ func makeBuitins() map[string]object.Function {
 }
 
 func evalTruthy(obj object.Object) bool {
-	boolean, ok := obj.(*object.BooleanObject)
+    if obj == NULL || obj == FALSE {
+        return false
+    }
 
-	if !ok {
-		if obj == NULL {
-			return false
-		}
-
-		return true
-	}
-
-	return boolean.Value
+	return true
 }
 
 func isInt(num float64) bool {
