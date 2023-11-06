@@ -24,6 +24,9 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// Transform the supplied token list into an AST representing the program.
+//
+// This also populated the Errors field with parser errors encountered.
 func (p *Parser) ParseProgram() *ast.Program {
 	expressions := []ast.Expression{}
 
@@ -37,6 +40,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 }
 
+// Parse expressions recursively, to allow for nested expressions.
 func (p *Parser) parseExpression() ast.Expression {
 	switch p.curToken.Type {
 	case token.NUM:
@@ -97,6 +101,7 @@ func (p *Parser) parseExpression() ast.Expression {
 	}
 }
 
+// Parse an expression of the form (f a b c).
 func (p *Parser) parseSExpression() ast.Expression {
 	sExpression := &ast.SExpression{}
 
@@ -166,6 +171,8 @@ func (p *Parser) parseDictLiteral() ast.Expression {
 	return sExpression
 }
 
+// Currently this only parses lists of the form '(a b c).
+// This is shorthand for (list a b c).
 func (p *Parser) parseQuoteExpression() ast.Expression {
 	sExpression := &ast.SExpression{}
 

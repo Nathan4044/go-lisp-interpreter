@@ -12,6 +12,7 @@ var (
 	NULL  = &object.Null{}
 )
 
+// Recursively evaluate a given expression and return a final value.
 func Evaluate(e ast.Expression, env *object.Environment) object.Object {
 	switch e := e.(type) {
     case *ast.Program:
@@ -46,6 +47,8 @@ func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Obj
 		return &object.List{}
 	}
 
+    // this switch covers evaluating special functions that break the standard
+    // function construction
     switch e.Fn.String() {
     case "if":
         return evaluateIfExpression(e, env)
@@ -94,7 +97,6 @@ func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 		return NULL
 	}
 
-	builtins := makeBuitins()
 	fn, ok := builtins[i.String()]
 
 	if ok {

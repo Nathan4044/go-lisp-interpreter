@@ -25,6 +25,8 @@ func New(input string) *Lexer {
 	return l
 }
 
+// Read bytes from input until a complete token is formed.
+// Return the newly created token.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -160,6 +162,7 @@ func isReservedChar(ch byte) bool {
 		')': true,
 		'{': true,
 		'}': true,
+        // 0 is the byte value that indicated the end of input
 		0:   true,
 	}
 
