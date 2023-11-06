@@ -1,4 +1,9 @@
-(def rangeBuilder (lambda (lst start end) (if (= start end) lst (rangeBuilder (push! lst start) (+ 1 start) end))))
+(def rangeBuilder
+     (lambda (lst start end)
+       (if (= start end)
+         lst
+         (rangeBuilder (push! lst start) (+ 1 start) end))))
+
 (def range (lambda (n) (rangeBuilder '() 0 n)))
 
 (def reduce (lambda (lst fn acc)
@@ -13,7 +18,7 @@
 
 (def fib (lambda (n) (fibIter 0 1 n)))
 
-(def lst (range 92))
+(def lst (range 75))
 
 (def result (map lst fib))
 
