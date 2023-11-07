@@ -68,7 +68,7 @@ func (p *Parser) parseExpression() ast.Expression {
 
 		errMsg := fmt.Sprintf("%s is invalid number", p.curToken.Literal)
 		p.Errors = append(p.Errors, errMsg)
-        p.readToken()
+		p.readToken()
 		return nil
 	case token.STRING:
 		string := &ast.StringLiteral{
@@ -89,10 +89,10 @@ func (p *Parser) parseExpression() ast.Expression {
 		return p.parseQuoteExpression()
 	case token.EOF:
 		return nil
-    case token.ILLEGAL:
-        p.Errors = append(p.Errors, p.curToken.Literal)
-        p.readToken()
-        return nil
+	case token.ILLEGAL:
+		p.Errors = append(p.Errors, p.curToken.Literal)
+		p.readToken()
+		return nil
 	default:
 		errorMessage := fmt.Sprintf("should not reach here:\n\treceived: %+v\n\tpeek: %s", p.curToken, p.peekToken)
 		p.Errors = append(p.Errors, errorMessage)

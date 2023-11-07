@@ -129,12 +129,12 @@ func (l *Lexer) readString() token.Token {
 	var output bytes.Buffer
 
 	for l.ch != '"' {
-        if l.ch == 0 {
-            return token.Token{
-                Type: token.ILLEGAL,
-                Literal: fmt.Sprintf("unterminated string: \"%s", output.String()),
-            }
-        }
+		if l.ch == 0 {
+			return token.Token{
+				Type:    token.ILLEGAL,
+				Literal: fmt.Sprintf("unterminated string: \"%s", output.String()),
+			}
+		}
 		output.WriteByte(l.ch)
 		l.readChar()
 	}
@@ -162,8 +162,8 @@ func isReservedChar(ch byte) bool {
 		')': true,
 		'{': true,
 		'}': true,
-        // 0 is the byte value that indicated the end of input
-		0:   true,
+		// 0 is the byte value that indicated the end of input
+		0: true,
 	}
 
 	_, ok := reserved[ch]
