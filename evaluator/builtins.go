@@ -320,6 +320,18 @@ var builtins = map[string]object.Function{
 			Values: list.Values[1:],
 		}
 	},
+	"last": func(env *object.Environment, args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return wrongNumOfArgsError("last", "1", len(args))
+		}
+
+		if args[0].Type() != object.LIST_OBJ {
+			return badTypeError("last", args[0])
+		}
+
+		list := args[0].(*object.List)
+		return list.Values[len(list.Values)-1]
+	},
 	"len": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 1 {
 			return wrongNumOfArgsError("len", "1", len(args))
