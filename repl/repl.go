@@ -1,3 +1,4 @@
+// repl contains the function that starts an interactive session.
 package repl
 
 import (
@@ -10,6 +11,8 @@ import (
 
 const PROMPT = ">>> "
 
+// Starts an interactive interpreter, conventionally in the terminal
+// with stdin and stdout as the Reader and Writer.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment(nil)

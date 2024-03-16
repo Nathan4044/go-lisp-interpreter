@@ -1,10 +1,13 @@
+// A collection of functions for calculating equality between objects.
 package evaluator
 
 import (
 	"lisp/object"
 )
 
-func numsEqual(first float64, env *object.Environment, rest ...object.Object) *object.BooleanObject {
+// Compare list of objects to ensure all have
+// the same value as the initially given number.
+func numsEqual(first float64, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		var num float64
 
@@ -25,7 +28,9 @@ func numsEqual(first float64, env *object.Environment, rest ...object.Object) *o
 	return TRUE
 }
 
-func stringsEqual(first *object.String, env *object.Environment, rest ...object.Object) *object.BooleanObject {
+// Compare list of objects to ensure all have
+// the same value as the initially given string.
+func stringsEqual(first *object.String, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		str, ok := arg.(*object.String)
 
@@ -41,7 +46,9 @@ func stringsEqual(first *object.String, env *object.Environment, rest ...object.
 	return TRUE
 }
 
-func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
+// Compare list of objects to ensure all have
+// the same value as the initially given bool.
+func boolEqual(first *object.BooleanObject, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		boolean, ok := arg.(*object.BooleanObject)
 
@@ -57,7 +64,9 @@ func boolEqual(first *object.BooleanObject, env *object.Environment, rest ...obj
 	return TRUE
 }
 
-func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
+// Compare list of objects to ensure all have
+// the same value as the initially given lambda.
+func lambdasEqual(first *object.LambdaObject, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		lambda, ok := arg.(*object.LambdaObject)
 
@@ -73,7 +82,9 @@ func lambdasEqual(first *object.LambdaObject, env *object.Environment, rest ...o
 	return TRUE
 }
 
-func functionsEqual(first *object.FunctionObject, env *object.Environment, rest ...object.Object) *object.BooleanObject {
+// Compare list of objects to ensure all have
+// the same value as the initially given function.
+func functionsEqual(first *object.FunctionObject, rest ...object.Object) *object.BooleanObject {
 	for _, arg := range rest {
 		function, ok := arg.(*object.FunctionObject)
 

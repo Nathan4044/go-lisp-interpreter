@@ -7,6 +7,8 @@ import (
 	"lisp/parser"
 )
 
+// Evaluate the expresions in the provided program,
+// using the provided environment as its base.
 func Run(source string, env *object.Environment) (object.Object, []string) {
 	l := lexer.New(source)
 	p := parser.New(l)

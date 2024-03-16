@@ -1,3 +1,4 @@
+// Define the lexer object
 package lexer
 
 import (
@@ -6,13 +7,19 @@ import (
 	"lisp/token"
 )
 
+const EOF byte = 0
+
+// A Lexer is an object that transforms the input text
+// into tokens until reaching an EOF.
 type Lexer struct {
-	Input   string
-	pos     int
-	readPos int
-	ch      byte
+	Input   string // The source code text.
+	pos     int    // The current character position in the text.
+	readPos int    // The position of the next character.
+	ch      byte   // The currently highlighted character.
 }
 
+// Create a new lexer object that will tokenize the given
+// input text.
 func New(input string) *Lexer {
 	l := &Lexer{
 		Input: input,
@@ -67,7 +74,7 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.readNumber()
 	case isValidIdentChar(l.ch):
 		tok = l.readIdent()
-	case l.ch == 0:
+	case l.ch == EOF:
 		tok.Type = token.EOF
 		tok.Literal = ""
 	default:
@@ -78,25 +85,37 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+// Update the position, read position, and
+// the current character fields in the lexer.
+//
+// If the read position is beyond the end of
+// the input, return EOF.
 func (l *Lexer) readChar() {
 	l.pos++
 	l.readPos = l.pos + 1
 
 	if l.readPos >= len(l.Input)+1 {
-		l.ch = 0
+		l.ch = EOF
 	} else {
 		l.ch = l.Input[l.pos]
 	}
 }
 
+// See the next character in the input.
+//
+// If the read position is beyond the end of
+// the input, return EOF.
 func (l *Lexer) peekChar() byte {
 	if l.readPos >= len(l.Input)+1 {
-		return 0
+		return EOF
 	}
 
 	return l.Input[l.readPos]
 }
 
+// Read characters until either reaching whitespace or
+// a reserved character. Return a Token of type number
+// with the literal value of a string of the read characters.
 func (l *Lexer) readNumber() token.Token {
 	start := l.pos
 
@@ -110,6 +129,9 @@ func (l *Lexer) readNumber() token.Token {
 	}
 }
 
+// Read characters until either reaching whitespace or
+// a reserved character. Return a Token of type identifier
+// with the literal value of a string of the read characters.
 func (l *Lexer) readIdent() token.Token {
 	start := l.pos
 
@@ -123,6 +145,9 @@ func (l *Lexer) readIdent() token.Token {
 	}
 }
 
+// Read characters until reaching a terminating `"`.
+// Return a Token of type identifier string with
+// the literal value of a string of the read characters.
 func (l *Lexer) readString() token.Token {
 	l.readChar()
 
@@ -156,14 +181,16 @@ func isValidIdentChar(ch byte) bool {
 	return !isReservedChar(ch) && !isWhitespace(ch)
 }
 
+// Checks if the provided character is in a set of
+// reserved characters that can't be part of another
+// token.
 func isReservedChar(ch byte) bool {
 	reserved := map[byte]bool{
 		'(': true,
 		')': true,
 		'{': true,
 		'}': true,
-		// 0 is the byte value that indicated the end of input
-		0: true,
+		EOF: true,
 	}
 
 	_, ok := reserved[ch]

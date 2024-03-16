@@ -1,3 +1,5 @@
+// Defines the Token type to be produced by the Lexer
+// when tokenising the input string.
 package token
 
 type TokenType string

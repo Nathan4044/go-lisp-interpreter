@@ -1,3 +1,4 @@
+// Collection of functions for creating common error objects.
 package evaluator
 
 import (

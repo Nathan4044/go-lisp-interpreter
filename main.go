@@ -1,3 +1,4 @@
+// Run the lisp interpreter.
 package main
 
 import (
@@ -10,8 +11,10 @@ import (
 
 func main() {
 	switch len(os.Args) {
+	// if there are no args provided, evaluate from stdin
 	case 1:
 		repl.Start(os.Stdin, os.Stdout)
+		// if a filename is provided, evaluate the code within the file
 	case 2:
 		fileContents, err := os.ReadFile(os.Args[1])
 
@@ -34,6 +37,8 @@ func main() {
 				fmt.Fprintf(os.Stderr, err.Inspect())
 			}
 		}
+		// Currently, execution of only one file is supported.
+		// There are also no command options.
 	default:
 		fmt.Fprintf(os.Stderr, "expected only 1 filename")
 	}

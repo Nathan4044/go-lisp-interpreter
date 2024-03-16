@@ -1,3 +1,4 @@
+// Contains the type definitions used to create AST nodes.
 package ast
 
 import (
@@ -5,15 +6,23 @@ import (
 	"lisp/token"
 )
 
+// Base interface for all Expressions.
+//
+// expression() is an empty method used
+// for interface satisfaction only.
 type Expression interface {
 	expression()
 	String() string
 }
 
+// Used as an alias to identify the
+// whole program.
 type Program struct {
 	Expressions []Expression
 }
 
+// Prints the each expression inside
+// of the program.
 func (p *Program) String() string {
 	var output bytes.Buffer
 
@@ -26,6 +35,7 @@ func (p *Program) String() string {
 
 func (p *Program) expression() {}
 
+// Identifiers are variable names.
 type Identifier struct {
 	Token token.Token
 }
@@ -69,11 +79,21 @@ func (sl *StringLiteral) String() string {
 
 func (sl *StringLiteral) expression() {}
 
+// SExpressions are the lisp representation of a function call.
+//
+// Fn represents the function `func` and Args represents the
+// arguments arg1, arg2, etc. in the expression:
+//
+// (func arg1 arg2 arg3)
+//
+// SExpression fulfills the Expression interface, so both Fn
+// and any arg can also be an SExpression.
 type SExpression struct {
 	Fn   Expression
 	Args []Expression
 }
 
+// Recursively print the values in the SExpression.
 func (se *SExpression) String() string {
 	var output bytes.Buffer
 

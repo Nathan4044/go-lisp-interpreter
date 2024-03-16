@@ -1,3 +1,5 @@
+// Define the Object interface, and the object types that
+// utilise it.
 package object
 
 import (
@@ -21,15 +23,18 @@ const (
 	ERROR_OBJ    = "ERROR"
 )
 
+// The Function type is the definition of a builtin function.
 type Function func(env *Environment, args ...Object) Object
 
 type ObjectType string
 
+// Object defines a basic interface that specific types will implement.
 type Object interface {
-	Type() ObjectType
-	Inspect() string
+	Type() ObjectType // Return one of the predefined object type strings.
+	Inspect() string  // Return a string representation of the Object.
 }
 
+// Integer is an Object that holds an integer value.
 type Integer struct {
 	Value int64
 }
@@ -38,10 +43,12 @@ func (i *Integer) Type() ObjectType {
 	return INTEGER_OBJ
 }
 
+// Return the integer value as a string.
 func (i *Integer) Inspect() string {
 	return fmt.Sprintf("%d", i.Value)
 }
 
+// Float is an Object that holds a float value.
 type Float struct {
 	Value float64
 }
@@ -50,10 +57,12 @@ func (f *Float) Type() ObjectType {
 	return FLOAT_OBJ
 }
 
+// Return the float value as a string.
 func (f *Float) Inspect() string {
 	return fmt.Sprintf("%f", f.Value)
 }
 
+// String is an Object that holds a string value.
 type String struct {
 	Value string
 }
@@ -62,10 +71,12 @@ func (s *String) Type() ObjectType {
 	return STRING_OBJ
 }
 
+// Return the String Object's inner value.
 func (s *String) Inspect() string {
 	return s.Value
 }
 
+// The List Object wraps an Object slice.
 type List struct {
 	Values []Object
 }
@@ -74,6 +85,8 @@ func (l *List) Type() ObjectType {
 	return LIST_OBJ
 }
 
+// Returns a string representation of the items contained
+// within the List.
 func (l *List) Inspect() string {
 	var result bytes.Buffer
 
@@ -91,6 +104,11 @@ func (l *List) Inspect() string {
 	return result.String()
 }
 
+// FunctionObject wraps a builtin function, along with the associated
+// name.
+//
+// This provides the ability to associate builtin functions as
+// a lisp Object.
 type FunctionObject struct {
 	Fn   Function
 	Name string
@@ -104,6 +122,7 @@ func (f *FunctionObject) Inspect() string {
 	return f.Name
 }
 
+// Boolean is an Object that holds a bool value.
 type BooleanObject struct {
 	Value bool
 }
@@ -112,6 +131,7 @@ func (b *BooleanObject) Type() ObjectType {
 	return BOOLEAN_OBJ
 }
 
+// Return a string representation of the bool value.
 func (b *BooleanObject) Inspect() string {
 	if b.Value {
 		return "true"
@@ -119,6 +139,7 @@ func (b *BooleanObject) Inspect() string {
 	return "false"
 }
 
+// An Object type that represents no return value.
 type Null struct{}
 
 func (n *Null) Type() ObjectType {
@@ -129,16 +150,19 @@ func (n *Null) Inspect() string {
 	return "null"
 }
 
+// The Lambda type stores user defined lambda functions.
 type LambdaObject struct {
-	Args []string
-	Env  *Environment
-	Body []ast.Expression
+	Args []string         // The Arguments passed to the function.
+	Env  *Environment     // The Environment in which the lambda was defined, allowing for closures.
+	Body []ast.Expression // The SExpressions defined by the user, which are evaluated when the lambda is called.
 }
 
 func (l *LambdaObject) Type() ObjectType {
 	return LAMBDA_OBJ
 }
 
+// Return a string representation of the defined lambda.
+// Essentially recreating the source code that defined the lambda.
 func (l *LambdaObject) Inspect() string {
 	var result bytes.Buffer
 
@@ -161,6 +185,8 @@ func (l *LambdaObject) Inspect() string {
 	return result.String()
 }
 
+// An object type used to store returned errors for when evaluation
+// goes wrong.
 type ErrorObject struct {
 	Error string
 }
@@ -173,19 +199,24 @@ func (e *ErrorObject) Inspect() string {
 	return fmt.Sprintf("ERROR: %s", e.Error)
 }
 
+// The HashKey Object stores a hashed value of a Hashable Object so
+// that it can be used as a key in a Dictionary.
 type HashKey struct {
 	Type  ObjectType
 	Value uint64
 }
 
+// Used to establish if an Object can be used as a key in a Dictionary.
 type Hashable interface {
 	HashKey() HashKey
 }
 
+// Create a HashKey object that represents an Integer.
 func (i *Integer) HashKey() HashKey {
 	return HashKey{Type: INTEGER_OBJ, Value: uint64(i.Value)}
 }
 
+// Create a HashKey object that represents a Boolean.
 func (b *BooleanObject) HashKey() HashKey {
 	var value uint64
 
@@ -198,6 +229,8 @@ func (b *BooleanObject) HashKey() HashKey {
 	return HashKey{Type: STRING_OBJ, Value: value}
 }
 
+// Create a HashKey object that represents a String
+// by converting the string Value to a uint64.
 func (s *String) HashKey() HashKey {
 	h := fnv.New64a()
 	h.Write([]byte(s.Value))
@@ -205,20 +238,26 @@ func (s *String) HashKey() HashKey {
 	return HashKey{Type: STRING_OBJ, Value: h.Sum64()}
 }
 
+// The DictPair type represents both the key and value
+// to be stored in a Dictionary.
 type DictPair struct {
 	Key   Object
 	Value Object
 }
 
-type Dict struct {
+// The Dictionary type wraps a map of HashKey to DictPair
+// where the HashKey is created from the Key from the DictPair.
+type Dictionary struct {
 	Values map[HashKey]DictPair
 }
 
-func (d *Dict) Type() ObjectType {
+func (d *Dictionary) Type() ObjectType {
 	return DICT_OBJ
 }
 
-func (d *Dict) Inspect() string {
+// Create a string representation of a Dictionary by
+// concatenating the string representations of its DictPairs.
+func (d *Dictionary) Inspect() string {
 	var result bytes.Buffer
 
 	result.WriteString("{")

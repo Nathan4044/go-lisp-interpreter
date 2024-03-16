@@ -1,3 +1,4 @@
+// Namespace for containing the builtin functions map.
 package evaluator
 
 import (
@@ -7,6 +8,7 @@ import (
 	"strings"
 )
 
+// A map of all the built in functions in the interpreter
 var builtins = map[string]object.Function{
 	"+": func(env *object.Environment, args ...object.Object) object.Object {
 		var result float64 = 0
@@ -25,6 +27,7 @@ var builtins = map[string]object.Function{
 		if isInt(result) {
 			return &object.Integer{Value: int64(result)}
 		}
+
 		return &object.Float{Value: result}
 	},
 	"*": func(env *object.Environment, args ...object.Object) object.Object {
@@ -120,6 +123,7 @@ var builtins = map[string]object.Function{
 			return &object.Float{Value: result}
 		}
 	},
+	// Analogous to % in other languages like python, ruby, etc.
 	"rem": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 2 {
 			return wrongNumOfArgsError("rem", "2", len(args))
@@ -145,6 +149,7 @@ var builtins = map[string]object.Function{
 
 		return &object.Integer{Value: ints[0] % ints[1]}
 	},
+	// Analogous to `==` in other languages, but with any amount of arguments
 	"=": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) == 0 {
 			return TRUE
@@ -154,17 +159,17 @@ var builtins = map[string]object.Function{
 
 		switch obj := obj.(type) {
 		case *object.Integer:
-			return numsEqual(float64(obj.Value), env, args[1:]...)
+			return numsEqual(float64(obj.Value), args[1:]...)
 		case *object.Float:
-			return numsEqual(obj.Value, env, args[1:]...)
+			return numsEqual(obj.Value, args[1:]...)
 		case *object.String:
-			return stringsEqual(obj, env, args[1:]...)
+			return stringsEqual(obj, args[1:]...)
 		case *object.BooleanObject:
-			return boolEqual(obj, env, args[1:]...)
+			return boolEqual(obj, args[1:]...)
 		case *object.LambdaObject:
-			return lambdasEqual(obj, env, args[1:]...)
+			return lambdasEqual(obj, args[1:]...)
 		case *object.FunctionObject:
-			return functionsEqual(obj, env, args[1:]...)
+			return functionsEqual(obj, args[1:]...)
 		default:
 			return badTypeError("=", obj)
 		}
@@ -261,12 +266,13 @@ var builtins = map[string]object.Function{
 
 		return FALSE
 	},
+	// Construct a List Object from an argument list.
 	"list": func(env *object.Environment, args ...object.Object) object.Object {
-		// Note: not sure if args need to be copied to new slice or not.
 		return &object.List{
 			Values: args,
 		}
 	},
+	// Construct a Dictionary Object from an argument list.
 	"dict": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args)%2 != 0 {
 			return wrongNumOfArgsError("dict", "even number", len(args))
@@ -290,7 +296,7 @@ var builtins = map[string]object.Function{
 			}
 		}
 
-		return &object.Dict{
+		return &object.Dictionary{
 			Values: items,
 		}
 	},
@@ -344,6 +350,10 @@ var builtins = map[string]object.Function{
 		list := args[0].(*object.List)
 		return &object.Integer{Value: int64(len(list.Values))}
 	},
+	// Takes two arguments, a list and an object.
+	//
+	// Returns a new list that is a copy of the given list, with
+	// the object appended.
 	"push": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 2 {
 			return wrongNumOfArgsError("push", "2", len(args))
@@ -365,6 +375,10 @@ var builtins = map[string]object.Function{
 
 		return &object.List{Values: newList}
 	},
+	// Takes two arguments, a list and an object.
+	//
+	// Appends the object to the list in place, returning
+	// a reference to the same list.
 	"push!": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 2 {
 			return wrongNumOfArgsError("push", "2", len(args))
@@ -382,6 +396,10 @@ var builtins = map[string]object.Function{
 
 		return list
 	},
+	// Takes a list as its argument.
+	//
+	// Removes the last object from the list in place
+	// and returns the popped object.
 	"pop!": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 1 {
 			return wrongNumOfArgsError("pop", "1", len(args))
@@ -408,6 +426,7 @@ var builtins = map[string]object.Function{
 
 		return result
 	},
+	// string representation of any object
 	"str": func(env *object.Environment, args ...object.Object) object.Object {
 		var result bytes.Buffer
 
@@ -430,6 +449,10 @@ var builtins = map[string]object.Function{
 
 		return NULL
 	},
+	// Used to retrieve an item from a dictionary.
+	//
+	// `(get dict 'key')` is the equivalent of `dict['key']`
+	// in other languages.
 	"get": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 2 {
 			wrongNumOfArgsError("get", "2", len(args))
@@ -444,7 +467,7 @@ var builtins = map[string]object.Function{
 				Error: err,
 			}
 		}
-		dict := dictObj.(*object.Dict)
+		dict := dictObj.(*object.Dictionary)
 
 		key, ok := keyObj.(object.Hashable)
 		if !ok {
@@ -459,6 +482,10 @@ var builtins = map[string]object.Function{
 
 		return result.Value
 	},
+	// Used to add an item to a dictionary.
+	//
+	// `(set dict 'key' 5)` is the equivalent of `dict['key'] = 5`
+	// in other languages.
 	"set": func(env *object.Environment, args ...object.Object) object.Object {
 		if len(args) != 3 {
 			wrongNumOfArgsError("get", "3", len(args))
@@ -481,7 +508,7 @@ var builtins = map[string]object.Function{
 			badKeyError(keyObj)
 		}
 
-		dict := dictObj.(*object.Dict)
+		dict := dictObj.(*object.Dictionary)
 		dict.Values[key.HashKey()] = object.DictPair{
 			Key:   keyObj,
 			Value: value,

@@ -1,3 +1,4 @@
+// Runs the program by evaluating the AST.
 package evaluator
 
 import (
@@ -42,13 +43,14 @@ func Evaluate(e ast.Expression, env *object.Environment) object.Object {
 	}
 }
 
+// Recursively evaluate an SExpression and return the resulting object.
 func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	if e.Fn == nil {
 		return &object.List{}
 	}
 
-	// this switch covers evaluating special functions that break the standard
-	// function construction
+	// This switch covers evaluating special functions that break the standard
+	// function construction.
 	switch e.Fn.String() {
 	case "if":
 		return evaluateIfExpression(e, env)
@@ -75,7 +77,7 @@ func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Obj
 	case *object.FunctionObject:
 		return fnExpression.Fn(env, args...)
 	case *object.LambdaObject:
-		return evalLambda(e.Fn.String(), fnExpression, env, args...)
+		return evalLambda(e.Fn.String(), fnExpression, args...)
 	default:
 		err := fmt.Sprintf("%s is not a function", fnExpression.Inspect())
 		return &object.ErrorObject{
@@ -84,6 +86,10 @@ func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Obj
 	}
 }
 
+// Return the object associated with the given identifier.
+//
+// Starts by checking reserved keywords (booleans, builtins),
+// if not found then retrieves the object from the environment.
 func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 	if i.String() == "true" {
 		return TRUE
@@ -106,7 +112,14 @@ func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 	return env.Get(i.String())
 }
 
-func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Environment, args ...object.Object) object.Object {
+/*
+Evaluate the execution of a lambda function.
+
+ 1. Evaluate each argument passed to the lambda and add them to a new environment.
+ 2. Evaluate all but the last expression in the lambda, using the new environment.
+ 3. Evaluate the final expression and return its result.
+*/
+func evalLambda(lambdaName string, lambda *object.LambdaObject, args ...object.Object) object.Object {
 	if len(lambda.Args) != len(args) {
 		err := fmt.Sprintf("incorrect number of args for %s: expected=%d got=%d",
 			lambdaName, len(lambda.Args), len(args))
@@ -135,6 +148,8 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, env *object.Envi
 	return Evaluate(lambda.Body[lastIndex], lambdaEnv)
 }
 
+// Evaluate the condition of an if expression, then conditionally
+// evaluate either the consequence or alternative.
 func evaluateIfExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	if len(e.Args) < 2 || len(e.Args) > 3 {
 		return wrongNumOfArgsError("if", "2 or 3", len(e.Args))
@@ -159,6 +174,12 @@ func evaluateIfExpression(e *ast.SExpression, env *object.Environment) object.Ob
 	return NULL
 }
 
+// Add the evaluated expression to env, with the key being the provided identifier.
+//
+// SExpression must be of form (def ident expr) to be successful, where ident is an
+// identifier object and expr is any valid expression.
+//
+// Otherwise return error object.
 func evaluateDefExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	if len(e.Args) != 2 {
 		return wrongNumOfArgsError("def", "2", len(e.Args))
@@ -180,6 +201,14 @@ func evaluateDefExpression(e *ast.SExpression, env *object.Environment) object.O
 	return val
 }
 
+/*
+Evaluate an expression that defines a lambda.
+
+	The provided SExpression should be of the form
+	`(lambda (arg1 arg2 ...) (expr1 expr2 ...))`
+
+	Where argX is an identifier, and exprX is any valid expression.
+*/
 func evaluateLambdaExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	args := e.Args
 

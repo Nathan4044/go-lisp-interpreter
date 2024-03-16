@@ -1,3 +1,4 @@
+// The definition of the Parser type and its functionality.
 package parser
 
 import (
@@ -8,13 +9,16 @@ import (
 	"strconv"
 )
 
+// The Parser type is used to transform the Tokens provided by
+// a Lexer into an AST that can be evaluated.
 type Parser struct {
-	lexer     *lexer.Lexer
-	curToken  token.Token
-	peekToken token.Token
-	Errors    []string
+	lexer     *lexer.Lexer // The Lexer that provides the Tokens.
+	curToken  token.Token  // The Token currently added to the AST.
+	peekToken token.Token  // The next Token to be parsed, used for look-ahead.
+	Errors    []string     // A collection of Errors encountered during parsing.
 }
 
+// Create a new Parser instance that uses the provided Lexer.
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		lexer: l,
@@ -24,9 +28,9 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-// Transform the supplied token list into an AST representing the program.
+// Transform the supplied Token list into an AST representing the program.
 //
-// This also populated the Errors field with parser errors encountered.
+// This also populates the Errors field with parser errors encountered.
 func (p *Parser) ParseProgram() *ast.Program {
 	expressions := []ast.Expression{}
 
@@ -40,7 +44,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 }
 
-// Parse expressions recursively, to allow for nested expressions.
+// Parse Expressions recursively, to allow for nested expressions.
 func (p *Parser) parseExpression() ast.Expression {
 	switch p.curToken.Type {
 	case token.NUM:
@@ -101,7 +105,9 @@ func (p *Parser) parseExpression() ast.Expression {
 	}
 }
 
-// Parse an expression of the form (f a b c).
+// Parse SExpressions, which take the form:
+//
+//	(f a b c)
 func (p *Parser) parseSExpression() ast.Expression {
 	sExpression := &ast.SExpression{}
 
@@ -137,6 +143,9 @@ func (p *Parser) parseSExpression() ast.Expression {
 	return sExpression
 }
 
+// Parse a dictionary literal of the form:
+//
+//	{ arg1 arg2 arg3 arg4 }
 func (p *Parser) parseDictLiteral() ast.Expression {
 	sExpression := &ast.SExpression{}
 	sExpression.Fn = &ast.Identifier{
@@ -171,6 +180,8 @@ func (p *Parser) parseDictLiteral() ast.Expression {
 	return sExpression
 }
 
+// Parse an SExpression that begins with a quote.
+//
 // Currently this only parses lists of the form '(a b c).
 // This is shorthand for (list a b c).
 func (p *Parser) parseQuoteExpression() ast.Expression {
@@ -217,6 +228,7 @@ func (p *Parser) parseQuoteExpression() ast.Expression {
 	return sExpression
 }
 
+// Move to the next Token to parse.
 func (p *Parser) readToken() token.Token {
 	p.curToken = p.peekToken
 
