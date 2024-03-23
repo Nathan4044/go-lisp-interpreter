@@ -13,124 +13,128 @@ type Opcode byte
 
 // Definition of an Opcode
 type Definition struct {
-    Name string // Name associated with an Opcode
-    OperandWidths []int // Widths of each operand an Opcode accepts, measured in bytes
+	Name          string // Name associated with an Opcode
+	OperandWidths []int  // Widths of each operand an Opcode accepts, measured in bytes
 }
 
 const (
-    OpConstant Opcode = iota
+	OpConstant Opcode = iota
+	OpPop
 )
 
-var definitions = map[Opcode]*Definition {
-    OpConstant: { "OpConstant", []int{2} },
+var definitions = map[Opcode]*Definition{
+	OpConstant: {"OpConstant", []int{2}},
+	OpPop:      {"OpPop", []int{}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the
 // operand lengths defined in its Definition
 func Make(op Opcode, operands ...int) []byte {
-    def, ok := definitions[op]
+	def, ok := definitions[op]
 
-    if !ok {
-        // While error handling here would be considered proper, the chance
-        // of producing invalid instructions should be close to nil so long as
-        // the test cases cover each instructions creation.
-        return []byte{}
-    }
+	if !ok {
+		// While error handling here would be considered proper, the chance
+		// of producing invalid instructions should be close to nil so long as
+		// the test cases cover each instructions creation.
+		return []byte{}
+	}
 
-    instructionLen := 1
+	instructionLen := 1
 
-    for _, w := range def.OperandWidths {
-        instructionLen += w
-    }
+	for _, w := range def.OperandWidths {
+		instructionLen += w
+	}
 
-    instruction := make([]byte, instructionLen)
-    instruction[0] = byte(op)
+	instruction := make([]byte, instructionLen)
+	instruction[0] = byte(op)
 
-    offset := 1
+	offset := 1
 
-    for i, o := range operands {
-        width := def.OperandWidths[i]
+	for i, o := range operands {
+		width := def.OperandWidths[i]
 
-        switch width {
-        case 2:
-            binary.BigEndian.PutUint16(instruction[offset:], uint16(o))
-        }
+		switch width {
+		case 2:
+			binary.BigEndian.PutUint16(instruction[offset:], uint16(o))
+		}
 
-        offset += width
-    }
+		offset += width
+	}
 
-    return instruction
+	return instruction
 }
 
 // Lookup returns the Definition of the provided Opcode
 func Lookup(op byte) (*Definition, error) {
-    def, ok := definitions[Opcode(op)]
+	def, ok := definitions[Opcode(op)]
 
-    if !ok {
-        return nil, fmt.Errorf("opcode %d undefined", op)
-    }
+	if !ok {
+		return nil, fmt.Errorf("opcode %d undefined", op)
+	}
 
-    return def, nil
+	return def, nil
 }
 
 func (ins Instructions) String() string {
-    var out bytes.Buffer
+	var out bytes.Buffer
 
-    i := 0
+	i := 0
 
-    for i < len(ins) {
-        def, err := Lookup(ins[i])
+	for i < len(ins) {
+		def, err := Lookup(ins[i])
 
-        if err != nil {
-            fmt.Fprintf(&out, "ERROR: %s\n", err)
-            continue
-        }
+		if err != nil {
+			fmt.Fprintf(&out, "ERROR: %s\n", err)
+			continue
+		}
 
-        operands, read := ReadOperands(def, ins[i+1:])
+		operands, read := ReadOperands(def, ins[i+1:])
 
-        fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
-        i += 1 + read
-    }
+		fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
+		i += 1 + read
+	}
 
-    return out.String()
+	return out.String()
 }
 
 // ReadOperands uses an Opcode Definition to extract the operands from an
 // already encoded instruction
 func ReadOperands(def *Definition, ins Instructions) ([]int, int) {
-    operands := make([]int, len(def.OperandWidths))
+	operands := make([]int, len(def.OperandWidths))
 
-    offset := 0
+	offset := 0
 
-    for i, width := range def.OperandWidths {
-        switch width {
-        case 2:
-            operands[i] = int(ReadUint16(ins[offset:]))
-        }
-        
-        offset += width
-    }
+	for i, width := range def.OperandWidths {
+		switch width {
+		case 2:
+			operands[i] = int(ReadUint16(ins[offset:]))
+		}
 
-    return operands, offset
+		offset += width
+	}
+
+	return operands, offset
 }
 
 // ReadUint16 reads the enough bytes from the provided Instructions to create
 // a uint16
 func ReadUint16(ins Instructions) uint16 {
-    return binary.BigEndian.Uint16(ins)
+	return binary.BigEndian.Uint16(ins)
 }
 
 func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
-    operandCount := len(def.OperandWidths)
+	operandCount := len(def.OperandWidths)
 
-    if len(operands) != operandCount {
-        return fmt.Sprintf("ERROR: operand len %d does not match defined %d\n", len(operands), operandCount)
-    }
+	if len(operands) != operandCount {
+		return fmt.Sprintf("ERROR: operand len %d does not match defined %d\n", len(operands), operandCount)
+	}
 
-    switch operandCount {
-    case 1:
-        return fmt.Sprintf("%s %d", def.Name, operands[0])
-    }
+	switch operandCount {
+	case 0:
+		return def.Name
+	case 1:
+		return fmt.Sprintf("%s %d", def.Name, operands[0])
+	}
 
-    return fmt.Sprintf("ERROR: unhandled operandCount for %s\n", def.Name)
+	return fmt.Sprintf("ERROR: unhandled operandCount for %s\n", def.Name)
 }

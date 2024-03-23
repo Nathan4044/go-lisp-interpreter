@@ -6,76 +6,77 @@ import (
 )
 
 func TestMake(t *testing.T) {
-    tests := []struct {
-        op Opcode
-        operands []int
-        expected []byte
-    }{
-        {OpConstant, []int{65534}, []byte{byte(OpConstant), 255, 254}},
-    }
+	tests := []struct {
+		op       Opcode
+		operands []int
+		expected []byte
+	}{
+		{OpConstant, []int{65534}, []byte{byte(OpConstant), 255, 254}},
+		{OpPop, []int{}, []byte{byte(OpPop)}},
+	}
 
-    for _, tt := range tests {
-        instruction := Make(tt.op, tt.operands...)
+	for _, tt := range tests {
+		instruction := Make(tt.op, tt.operands...)
 
-        if len(instruction) != len(tt.expected) {
-            t.Errorf("instruction has wrong length, want=%d, got=%d", len(tt.expected), len(instruction))
-        }
+		if len(instruction) != len(tt.expected) {
+			t.Errorf("instruction has wrong length, want=%d, got=%d", len(tt.expected), len(instruction))
+		}
 
-        for i, b := range tt.expected {
-            if instruction[i] != tt.expected[i] {
-                t.Errorf("wrong byte at pos %d, want=%d got=%d", i, b, instruction[i])
-            }
-        }
-    }
+		for i, b := range tt.expected {
+			if instruction[i] != tt.expected[i] {
+				t.Errorf("wrong byte at pos %d, want=%d got=%d", i, b, instruction[i])
+			}
+		}
+	}
 }
 
 func TestInstructionsString(t *testing.T) {
-    instructions := []Instructions{
-        Make(OpConstant, 1),
-        Make(OpConstant, 2),
-        Make(OpConstant, 65535),
-    }
+	instructions := []Instructions{
+		Make(OpPop),
+		Make(OpConstant, 2),
+		Make(OpConstant, 65535),
+	}
 
-    expected := `0000 OpConstant 1
-0003 OpConstant 2
-0006 OpConstant 65535
+	expected := `0000 OpPop
+0001 OpConstant 2
+0004 OpConstant 65535
 `
 
-    concatted := slices.Concat(instructions...)
+	concatted := slices.Concat(instructions...)
 
-    if concatted.String() != expected {
-        t.Errorf("instructions wrongly formatted:\n  want=%q\n  got=%q", expected, concatted.String())
-    }
+	if concatted.String() != expected {
+		t.Errorf("instructions wrongly formatted:\n  want=%q\n  got=%q", expected, concatted.String())
+	}
 }
 
 func TestReadOperands(t *testing.T) {
-    tests := []struct {
-        op Opcode
-        operands []int
-        bytesRead int
-    }{
-        {OpConstant, []int{65535}, 2},
-    }
+	tests := []struct {
+		op        Opcode
+		operands  []int
+		bytesRead int
+	}{
+		{OpConstant, []int{65535}, 2},
+	}
 
-    for _, tt := range tests {
-        instruction := Make(tt.op, tt.operands...)
+	for _, tt := range tests {
+		instruction := Make(tt.op, tt.operands...)
 
-        def, err := Lookup(byte(tt.op))
+		def, err := Lookup(byte(tt.op))
 
-        if err != nil {
-            t.Fatalf("definition not found: %q\n", err)
-        }
+		if err != nil {
+			t.Fatalf("definition not found: %q\n", err)
+		}
 
-        operandsRead, n := ReadOperands(def, instruction[1:])
+		operandsRead, n := ReadOperands(def, instruction[1:])
 
-        if n != tt.bytesRead {
-            t.Fatalf("n wrong: want=%d got=%d", tt.bytesRead, n)
-        }
+		if n != tt.bytesRead {
+			t.Fatalf("n wrong: want=%d got=%d", tt.bytesRead, n)
+		}
 
-        for i, want := range tt.operands {
-            if operandsRead[i] != want {
-                t.Errorf("operand wrong: want=%d got=%d", want, operandsRead[i])
-            }
-        }
-    }
+		for i, want := range tt.operands {
+			if operandsRead[i] != want {
+				t.Errorf("operand wrong: want=%d got=%d", want, operandsRead[i])
+			}
+		}
+	}
 }

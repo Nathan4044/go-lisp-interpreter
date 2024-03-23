@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"lisp/interpreter"
-	"lisp/object"
+	//"lisp/object"
 )
 
 const PROMPT = ">>> "
@@ -15,7 +15,7 @@ const PROMPT = ">>> "
 // with stdin and stdout as the Reader and Writer.
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment(nil)
+	//env := object.NewEnvironment(nil)
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -29,7 +29,8 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		result, errors := interpreter.Run(scanner.Text(), env)
+		//result, errors := interpreter.Run(scanner.Text(), env)
+		result, errors := interpreter.RunCompiled(scanner.Text())
 
 		if len(errors) > 0 {
 			for _, err := range errors {

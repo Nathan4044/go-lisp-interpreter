@@ -3,7 +3,7 @@
 package compiler
 
 import (
-    "lisp/ast"
+	"lisp/ast"
 	"lisp/code"
 	"lisp/object"
 )
@@ -11,78 +11,82 @@ import (
 // The Compiler is a struct that holds the result of calls to the Compile
 // method
 type Compiler struct {
-    instructions code.Instructions // instructions generated from Compile
-    constants []object.Object // constant expressions found during Compile
+	instructions code.Instructions // instructions generated from Compile
+	constants    []object.Object   // constant expressions found during Compile
 }
 
 // Bytecode is a struct containing the instructions produced by a Compiler and
 // returned by the Bytecode method
 type Bytecode struct {
-    Instructions code.Instructions
-    Constants []object.Object
+	Instructions code.Instructions
+	Constants    []object.Object
 }
 
 // Return the address of a new Compiler instance
 func New() *Compiler {
-    return &Compiler{
-        instructions: code.Instructions{},
-        constants: []object.Object{},
-    }
+	return &Compiler{
+		instructions: code.Instructions{},
+		constants:    []object.Object{},
+	}
 }
 
 // Compile an AST Expression into bytecode instructions. Return an error if there is
 // a problem during the compilation step
 func (c *Compiler) Compile(expr ast.Expression) error {
-    switch expr := expr.(type) {
-    case *ast.Program:
-        for _, e := range expr.Expressions {
-            err := c.Compile(e)
+	switch expr := expr.(type) {
+	case *ast.Program:
+		for _, e := range expr.Expressions {
+			err := c.Compile(e)
 
-            if err != nil {
-                return err
-            }
-        }
-    case *ast.SExpression:
-        for _, e := range expr.Args {
-            err := c.Compile(e)
+			if err != nil {
+				return err
+			}
 
-            if err != nil {
-                return err
-            }
-        }
-    case *ast.IntegerLiteral:
-        integer := &object.Integer{Value: expr.Value}
+			c.emit(code.OpPop)
+		}
+	case *ast.SExpression:
+		for _, e := range expr.Args {
+			err := c.Compile(e)
 
-        c.emit(code.OpConstant, c.addConstant(integer))
-    }
+			if err != nil {
+				return err
+			}
+		}
+	case *ast.IntegerLiteral:
+		integer := &object.Integer{Value: expr.Value}
 
-    return nil
+		c.emit(code.OpConstant, c.addConstant(integer))
+	}
+
+	return nil
 }
 
+// Return a Bytecode instance containing the compiled instructions along with
+// a slice of constant values.
 func (c *Compiler) Bytecode() *Bytecode {
-    return &Bytecode{
-        Instructions: c.instructions,
-        Constants: c.constants,
-    }
+	return &Bytecode{
+		Instructions: c.instructions,
+		Constants:    c.constants,
+	}
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
-    c.constants = append(c.constants, obj)
+	c.constants = append(c.constants, obj)
 
-    return len(c.constants) - 1
+	return len(c.constants) - 1
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
-    ins := code.Make(op, operands...)
-    pos := c.addInstruction(ins)
+	ins := code.Make(op, operands...)
+	pos := c.addInstruction(ins)
 
-    return pos
+	return pos
 }
 
 func (c *Compiler) addInstruction(ins []byte) int {
-    posNewInstruction := len(c.instructions)
+	posNewInstruction := len(c.instructions)
 
-    c.instructions = append(c.instructions, ins...)
+	c.instructions = append(c.instructions, ins...)
 
-    return posNewInstruction
+	return posNewInstruction
 }
