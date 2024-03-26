@@ -20,11 +20,15 @@ type Definition struct {
 const (
 	OpConstant Opcode = iota
 	OpPop
+    OpTrue
+    OpFalse
 )
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 	OpPop:      {"OpPop", []int{}},
+	OpTrue:      {"OpTrue", []int{}},
+	OpFalse:      {"OpFalse", []int{}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the

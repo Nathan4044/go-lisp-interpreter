@@ -56,6 +56,13 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 		integer := &object.Integer{Value: expr.Value}
 
 		c.emit(code.OpConstant, c.addConstant(integer))
+    case *ast.Identifier:
+        switch expr.String() {
+        case "true":
+            c.emit(code.OpTrue)
+        case "false":
+            c.emit(code.OpFalse)
+        }
 	}
 
 	return nil

@@ -9,6 +9,9 @@ import (
 
 const StackSize = 2048
 
+var True = &object.BooleanObject{Value: true}
+var False = &object.BooleanObject{Value: false}
+
 // VM is used to execute the bytecode it contains.
 type VM struct {
 	constants    []object.Object // slice of constant values that are referenced in the bytecode instructions
@@ -49,6 +52,10 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			vm.pop()
+        case code.OpTrue:
+            vm.push(True)
+        case code.OpFalse:
+            vm.push(False)
 		}
 	}
 
