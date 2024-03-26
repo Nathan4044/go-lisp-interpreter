@@ -56,6 +56,21 @@ func (vm *VM) Run() error {
             vm.push(True)
         case code.OpFalse:
             vm.push(False)
+        case code.OpJump:
+            pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+
+            // decrement position so that it is correct when loop
+            // increments it
+            ip = pos - 1
+        case code.OpJumpWhenFalse:
+            pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+            ip += 2
+
+            condition := vm.pop()
+
+            if !isTruthy(condition) {
+                ip = pos - 1
+            }
 		}
 	}
 
@@ -93,4 +108,8 @@ func (vm *VM) pop() object.Object {
 // Return the item that was last popped from the stack.
 func (vm *VM) LastPoppedStackElem() object.Object {
 	return vm.stack[vm.sp]
+}
+
+func isTruthy(o object.Object) bool {
+    return o != False
 }

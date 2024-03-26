@@ -3,6 +3,7 @@
 package compiler
 
 import (
+	"fmt"
 	"lisp/ast"
 	"lisp/code"
 	"lisp/object"
@@ -45,17 +46,65 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 			c.emit(code.OpPop)
 		}
 	case *ast.SExpression:
-		for _, e := range expr.Args {
-			err := c.Compile(e)
+        switch expr.Fn.String() {
+        case "if":
+            if len(expr.Args) < 2 || len(expr.Args) > 3 {
+                return fmt.Errorf("incorrect number of values in if expression")
+            }
 
-			if err != nil {
-				return err
-			}
-		}
-	case *ast.IntegerLiteral:
-		integer := &object.Integer{Value: expr.Value}
+            condition := expr.Args[0]
 
-		c.emit(code.OpConstant, c.addConstant(integer))
+            err := c.Compile(condition)
+
+            if err != nil {
+                return err
+            }
+
+            // emit jump with erroneous destination, to be updated later
+            conditionalJumpPos := c.emit(code.OpJumpWhenFalse, 9999)
+
+            consequence := expr.Args[1]
+
+            err = c.Compile(consequence)
+
+            if err != nil {
+                return err
+            }
+
+            // if no alternative is present
+            if len(expr.Args) < 3 {
+                positionAfterConsequence := len(c.instructions)
+                c.changeOperand(conditionalJumpPos, positionAfterConsequence)
+            } else {
+                jumpPos := c.emit(code.OpJump, 9999)
+
+                positionAfterConsequence := len(c.instructions)
+                c.changeOperand(conditionalJumpPos, positionAfterConsequence)
+
+                alternative := expr.Args[2]
+
+                err = c.Compile(alternative)
+
+                if err != nil {
+                    return err
+                }
+
+                positionAfterAlternative := len(c.instructions)
+                c.changeOperand(jumpPos, positionAfterAlternative)
+            }
+        default:
+            for _, e := range expr.Args {
+                err := c.Compile(e)
+
+                if err != nil {
+                    return err
+                }
+            }
+        }
+    case *ast.IntegerLiteral:
+        integer := &object.Integer{Value: expr.Value}
+
+        c.emit(code.OpConstant, c.addConstant(integer))
     case *ast.Identifier:
         switch expr.String() {
         case "true":
@@ -63,37 +112,52 @@ func (c *Compiler) Compile(expr ast.Expression) error {
         case "false":
             c.emit(code.OpFalse)
         }
-	}
+    }
 
-	return nil
+    return nil
 }
 
 // Return a Bytecode instance containing the compiled instructions along with
 // a slice of constant values.
 func (c *Compiler) Bytecode() *Bytecode {
-	return &Bytecode{
-		Instructions: c.instructions,
-		Constants:    c.constants,
-	}
+    return &Bytecode{
+        Instructions: c.instructions,
+        Constants:    c.constants,
+    }
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
-	c.constants = append(c.constants, obj)
+    c.constants = append(c.constants, obj)
 
-	return len(c.constants) - 1
+    return len(c.constants) - 1
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
-	ins := code.Make(op, operands...)
-	pos := c.addInstruction(ins)
+    ins := code.Make(op, operands...)
+    pos := c.addInstruction(ins)
 
-	return pos
+    return pos
 }
 
 func (c *Compiler) addInstruction(ins []byte) int {
-	posNewInstruction := len(c.instructions)
+    posNewInstruction := len(c.instructions)
 
-	c.instructions = append(c.instructions, ins...)
+    c.instructions = append(c.instructions, ins...)
 
-	return posNewInstruction
+    return posNewInstruction
+}
+
+// only works for instructions of the same length
+func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
+    for i := 0; i < len(newInstruction); i++ {
+        c.instructions[pos+i] = newInstruction[i]
+    }
+}
+
+func (c *Compiler) changeOperand(opPos int, operand int) {
+    op := code.Opcode(c.instructions[opPos])
+
+    newInstruction := code.Make(op, operand)
+
+    c.replaceInstruction(opPos, newInstruction)
 }

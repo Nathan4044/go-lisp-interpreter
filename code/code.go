@@ -22,6 +22,8 @@ const (
 	OpPop
     OpTrue
     OpFalse
+    OpJumpWhenFalse
+    OpJump
 )
 
 var definitions = map[Opcode]*Definition{
@@ -29,6 +31,8 @@ var definitions = map[Opcode]*Definition{
 	OpPop:      {"OpPop", []int{}},
 	OpTrue:      {"OpTrue", []int{}},
 	OpFalse:      {"OpFalse", []int{}},
+	OpJumpWhenFalse: {"OpJumpWhenFalse", []int{2}},
+	OpJump: {"OpJump", []int{2}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the
