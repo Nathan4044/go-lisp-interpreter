@@ -86,11 +86,15 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 		if err != nil {
 			t.Errorf("testIntegerObject failed: %s", err)
 		}
-    case bool:
-        err := testBooleanObject(expected, actual)
+	case bool:
+		err := testBooleanObject(expected, actual)
 
 		if err != nil {
 			t.Errorf("testBooleanObject failed: %s", err)
+		}
+	case *object.Null:
+		if actual != Null {
+			t.Errorf("object is not null: %T(%+v)", actual, actual)
 		}
 	}
 }
@@ -106,26 +110,29 @@ func TestIntegerArithmetic(t *testing.T) {
 }
 
 func TestBooleanExpressions(t *testing.T) {
-    tests := []vmTestCase{
-        {"true", true},
-        {"false", false},
-    }
+	tests := []vmTestCase{
+		{"true", true},
+		{"false", false},
+	}
 
-    runVmTests(t, tests)
+	runVmTests(t, tests)
 }
 
-func testConditionals(t *testing.T) {
-    tests := []vmTestCase{
-        {"(if true 10)", 10},
-        {"(if true 10 20)", 10},
-        {"(if false 10 20)", 20},
-        {"(if 1 10)", 10},
-        {"(if 1 10 20)", 10},
-        // todo: uncomment when functions are implemented
-        // {"(if (< 1 2) 10)", 10},
-        // {"(if (< 1 2) 10 20)", 10},
-        // {"(if (> 1 2) 10 20)", 20},
-    }
+func TestConditionals(t *testing.T) {
+	tests := []vmTestCase{
+		{"(if true 10)", 10},
+		{"(if false 10)", Null},
+		{"(if true 10 20)", 10},
+		{"(if false 10 20)", 20},
+		{"(if 1 10)", 10},
+		{"(if 1 10 20)", 10},
+		{"(if (if false 10) 10 20)", 20},
+		// todo: uncomment when functions are implemented
+		// {"(if (< 1 2) 10)", 10},
+		// {"(if (< 1 2) 10 20)", 10},
+		// {"(if (> 1 2) 10 20)", 20},
+		// {"(not (if false 10))", true},
+	}
 
-    runVmTests(t, tests)
+	runVmTests(t, tests)
 }

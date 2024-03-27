@@ -11,13 +11,14 @@ const StackSize = 2048
 
 var True = &object.BooleanObject{Value: true}
 var False = &object.BooleanObject{Value: false}
+var Null = &object.Null{}
 
 // VM is used to execute the bytecode it contains.
 type VM struct {
-	constants    []object.Object // slice of constant values that are referenced in the bytecode instructions
+	constants    []object.Object   // slice of constant values that are referenced in the bytecode instructions
 	instructions code.Instructions // bytecode instructions to be executed
-	stack        []object.Object // the active stack used during execution
-	sp           int // pointer next open space on the stack
+	stack        []object.Object   // the active stack used during execution
+	sp           int               // pointer next open space on the stack
 }
 
 // Create a new VM instance from the provided bytecode.
@@ -34,14 +35,14 @@ func New(bytecode *compiler.Bytecode) *VM {
 //
 // Returns an error if something in execution fails.
 func (vm *VM) Run() error {
-    // fetch
+	// fetch
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
 
-        // decode
+		// decode
 		switch op {
 		case code.OpConstant:
-            // execute
+			// execute
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
 			ip += 2
 
@@ -52,25 +53,31 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			vm.pop()
-        case code.OpTrue:
-            vm.push(True)
-        case code.OpFalse:
-            vm.push(False)
-        case code.OpJump:
-            pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+		case code.OpTrue:
+			vm.push(True)
+		case code.OpFalse:
+			vm.push(False)
+		case code.OpJump:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
 
-            // decrement position so that it is correct when loop
-            // increments it
-            ip = pos - 1
-        case code.OpJumpWhenFalse:
-            pos := int(code.ReadUint16(vm.instructions[ip+1:]))
-            ip += 2
+			// decrement position so that it is correct when loop
+			// increments it
+			ip = pos - 1
+		case code.OpJumpWhenFalse:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
 
-            condition := vm.pop()
+			condition := vm.pop()
 
-            if !isTruthy(condition) {
-                ip = pos - 1
-            }
+			if !isTruthy(condition) {
+				ip = pos - 1
+			}
+		case code.OpNull:
+			err := vm.push(Null)
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -111,5 +118,5 @@ func (vm *VM) LastPoppedStackElem() object.Object {
 }
 
 func isTruthy(o object.Object) bool {
-    return o != False
+	return o != False && o != Null
 }

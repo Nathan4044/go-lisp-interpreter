@@ -48,72 +48,76 @@ func TestIntegerArithmetic(t *testing.T) {
 
 func TestBooleanExpressions(t *testing.T) {
 	tests := []compilerTestCase{
-        {
-            input: "true",
-            expectedConstants: []interface{}{},
-            expectedInstructions: []code.Instructions{
-                code.Make(code.OpTrue),
-                code.Make(code.OpPop),
-            },
-        },
-        {
-            input: "false",
-            expectedConstants: []interface{}{},
-            expectedInstructions: []code.Instructions{
-                code.Make(code.OpFalse),
-                code.Make(code.OpPop),
-            },
-        },
+		{
+			input:             "true",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "false",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	runCompilerTests(t, tests)
 }
 
 func TestConditionals(t *testing.T) {
-    tests := []compilerTestCase{
-        {
-            input: "(if true 4) 5",
-            expectedConstants: []interface{}{4, 5},
-            expectedInstructions: []code.Instructions{
-                // 0000
-                code.Make(code.OpTrue),
-                // 0001
-                code.Make(code.OpJumpWhenFalse, 7),
-                // 0004
-                code.Make(code.OpConstant, 0),
-                // 0007
-                code.Make(code.OpPop),
-                // 0008
-                code.Make(code.OpConstant, 1),
-                // 0011
-                code.Make(code.OpPop),
-            },
-        },
-        {
-            input: "(if true 4 10) 5",
-            expectedConstants: []interface{}{4, 10, 5},
-            expectedInstructions: []code.Instructions{
-                // 0000
-                code.Make(code.OpTrue),
-                // 0001
-                code.Make(code.OpJumpWhenFalse, 10),
-                // 0004
-                code.Make(code.OpConstant, 0),
-                // 0007
-                code.Make(code.OpJump, 13),
-                // 0010
-                code.Make(code.OpConstant, 1),
-                // 0013
-                code.Make(code.OpPop),
-                // 0014
-                code.Make(code.OpConstant, 2),
-                // 0017
-                code.Make(code.OpPop),
-            },
-        },
-    }
+	tests := []compilerTestCase{
+		{
+			input:             "(if true 4) 5",
+			expectedConstants: []interface{}{4, 5},
+			expectedInstructions: []code.Instructions{
+				// 0000
+				code.Make(code.OpTrue),
+				// 0001
+				code.Make(code.OpJumpWhenFalse, 10),
+				// 0004
+				code.Make(code.OpConstant, 0),
+				// 0007
+				code.Make(code.OpJump, 11),
+				// 0010
+				code.Make(code.OpNull),
+				// 0011
+				code.Make(code.OpPop),
+				// 0008
+				code.Make(code.OpConstant, 1),
+				// 0011
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "(if true 4 10) 5",
+			expectedConstants: []interface{}{4, 10, 5},
+			expectedInstructions: []code.Instructions{
+				// 0000
+				code.Make(code.OpTrue),
+				// 0001
+				code.Make(code.OpJumpWhenFalse, 10),
+				// 0004
+				code.Make(code.OpConstant, 0),
+				// 0007
+				code.Make(code.OpJump, 13),
+				// 0010
+				code.Make(code.OpConstant, 1),
+				// 0013
+				code.Make(code.OpPop),
+				// 0014
+				code.Make(code.OpConstant, 2),
+				// 0017
+				code.Make(code.OpPop),
+			},
+		},
+	}
 
-    runCompilerTests(t, tests)
+	runCompilerTests(t, tests)
 }
 
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {

@@ -46,118 +46,117 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 			c.emit(code.OpPop)
 		}
 	case *ast.SExpression:
-        switch expr.Fn.String() {
-        case "if":
-            if len(expr.Args) < 2 || len(expr.Args) > 3 {
-                return fmt.Errorf("incorrect number of values in if expression")
-            }
+		switch expr.Fn.String() {
+		case "if":
+			if len(expr.Args) < 2 || len(expr.Args) > 3 {
+				return fmt.Errorf("incorrect number of values in if expression")
+			}
 
-            condition := expr.Args[0]
+			condition := expr.Args[0]
 
-            err := c.Compile(condition)
+			err := c.Compile(condition)
 
-            if err != nil {
-                return err
-            }
+			if err != nil {
+				return err
+			}
 
-            // emit jump with erroneous destination, to be updated later
-            conditionalJumpPos := c.emit(code.OpJumpWhenFalse, 9999)
+			// emit jump with erroneous destination, to be updated later
+			conditionalJumpPos := c.emit(code.OpJumpWhenFalse, 9999)
 
-            consequence := expr.Args[1]
+			consequence := expr.Args[1]
 
-            err = c.Compile(consequence)
+			err = c.Compile(consequence)
 
-            if err != nil {
-                return err
-            }
+			if err != nil {
+				return err
+			}
 
-            // if no alternative is present
-            if len(expr.Args) < 3 {
-                positionAfterConsequence := len(c.instructions)
-                c.changeOperand(conditionalJumpPos, positionAfterConsequence)
-            } else {
-                jumpPos := c.emit(code.OpJump, 9999)
+			jumpPos := c.emit(code.OpJump, 9999)
 
-                positionAfterConsequence := len(c.instructions)
-                c.changeOperand(conditionalJumpPos, positionAfterConsequence)
+			positionAfterConsequence := len(c.instructions)
+			c.changeOperand(conditionalJumpPos, positionAfterConsequence)
 
-                alternative := expr.Args[2]
+			// if no alternative is present
+			if len(expr.Args) < 3 {
+				c.emit(code.OpNull)
+			} else {
+				alternative := expr.Args[2]
 
-                err = c.Compile(alternative)
+				err = c.Compile(alternative)
 
-                if err != nil {
-                    return err
-                }
+				if err != nil {
+					return err
+				}
+			}
 
-                positionAfterAlternative := len(c.instructions)
-                c.changeOperand(jumpPos, positionAfterAlternative)
-            }
-        default:
-            for _, e := range expr.Args {
-                err := c.Compile(e)
+			positionAfterAlternative := len(c.instructions)
+			c.changeOperand(jumpPos, positionAfterAlternative)
+		default:
+			for _, e := range expr.Args {
+				err := c.Compile(e)
 
-                if err != nil {
-                    return err
-                }
-            }
-        }
-    case *ast.IntegerLiteral:
-        integer := &object.Integer{Value: expr.Value}
+				if err != nil {
+					return err
+				}
+			}
+		}
+	case *ast.IntegerLiteral:
+		integer := &object.Integer{Value: expr.Value}
 
-        c.emit(code.OpConstant, c.addConstant(integer))
-    case *ast.Identifier:
-        switch expr.String() {
-        case "true":
-            c.emit(code.OpTrue)
-        case "false":
-            c.emit(code.OpFalse)
-        }
-    }
+		c.emit(code.OpConstant, c.addConstant(integer))
+	case *ast.Identifier:
+		switch expr.String() {
+		case "true":
+			c.emit(code.OpTrue)
+		case "false":
+			c.emit(code.OpFalse)
+		}
+	}
 
-    return nil
+	return nil
 }
 
 // Return a Bytecode instance containing the compiled instructions along with
 // a slice of constant values.
 func (c *Compiler) Bytecode() *Bytecode {
-    return &Bytecode{
-        Instructions: c.instructions,
-        Constants:    c.constants,
-    }
+	return &Bytecode{
+		Instructions: c.instructions,
+		Constants:    c.constants,
+	}
 }
 
 func (c *Compiler) addConstant(obj object.Object) int {
-    c.constants = append(c.constants, obj)
+	c.constants = append(c.constants, obj)
 
-    return len(c.constants) - 1
+	return len(c.constants) - 1
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
-    ins := code.Make(op, operands...)
-    pos := c.addInstruction(ins)
+	ins := code.Make(op, operands...)
+	pos := c.addInstruction(ins)
 
-    return pos
+	return pos
 }
 
 func (c *Compiler) addInstruction(ins []byte) int {
-    posNewInstruction := len(c.instructions)
+	posNewInstruction := len(c.instructions)
 
-    c.instructions = append(c.instructions, ins...)
+	c.instructions = append(c.instructions, ins...)
 
-    return posNewInstruction
+	return posNewInstruction
 }
 
 // only works for instructions of the same length
 func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
-    for i := 0; i < len(newInstruction); i++ {
-        c.instructions[pos+i] = newInstruction[i]
-    }
+	for i := 0; i < len(newInstruction); i++ {
+		c.instructions[pos+i] = newInstruction[i]
+	}
 }
 
 func (c *Compiler) changeOperand(opPos int, operand int) {
-    op := code.Opcode(c.instructions[opPos])
+	op := code.Opcode(c.instructions[opPos])
 
-    newInstruction := code.Make(op, operand)
+	newInstruction := code.Make(op, operand)
 
-    c.replaceInstruction(opPos, newInstruction)
+	c.replaceInstruction(opPos, newInstruction)
 }
