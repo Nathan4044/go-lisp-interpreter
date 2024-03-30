@@ -8,6 +8,7 @@ import (
 )
 
 const StackSize = 2048
+const GlobalSize = 65536
 
 var True = &object.BooleanObject{Value: true}
 var False = &object.BooleanObject{Value: false}
@@ -19,6 +20,7 @@ type VM struct {
 	instructions code.Instructions // bytecode instructions to be executed
 	stack        []object.Object   // the active stack used during execution
 	sp           int               // pointer next open space on the stack
+	globals      []object.Object
 }
 
 // Create a new VM instance from the provided bytecode.
@@ -28,6 +30,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 		constants:    bytecode.Constants,
 		stack:        make([]object.Object, StackSize),
 		sp:           0,
+		globals:      make([]object.Object, GlobalSize),
 	}
 }
 
@@ -74,6 +77,20 @@ func (vm *VM) Run() error {
 			}
 		case code.OpNull:
 			err := vm.push(Null)
+
+			if err != nil {
+				return err
+			}
+		case code.OpSetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[index] = vm.pop()
+		case code.OpGetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			err := vm.push(vm.globals[index])
 
 			if err != nil {
 				return err

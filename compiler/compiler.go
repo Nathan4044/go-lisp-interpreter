@@ -14,6 +14,7 @@ import (
 type Compiler struct {
 	instructions code.Instructions // instructions generated from Compile
 	constants    []object.Object   // constant expressions found during Compile
+	symbolTable  *SymbolTable
 }
 
 // Bytecode is a struct containing the instructions produced by a Compiler and
@@ -28,6 +29,7 @@ func New() *Compiler {
 	return &Compiler{
 		instructions: code.Instructions{},
 		constants:    []object.Object{},
+		symbolTable:  NewSymbolTable(),
 	}
 }
 
@@ -91,6 +93,27 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			positionAfterAlternative := len(c.instructions)
 			c.changeOperand(jumpPos, positionAfterAlternative)
+		case "def":
+			if len(expr.Args) != 2 {
+				return fmt.Errorf("incorrect number of values in def expression")
+			}
+
+			err := c.Compile(expr.Args[1])
+
+			if err != nil {
+				return err
+			}
+
+			name, ok := expr.Args[0].(*ast.Identifier)
+
+			if !ok {
+				return fmt.Errorf("first argument to def must be identifier")
+			}
+
+			symbol := c.symbolTable.Define(name.Token.Literal)
+
+			c.emit(code.OpSetGlobal, symbol.Index)
+			c.emit(code.OpGetGlobal, symbol.Index)
 		default:
 			for _, e := range expr.Args {
 				err := c.Compile(e)
@@ -110,6 +133,14 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 			c.emit(code.OpTrue)
 		case "false":
 			c.emit(code.OpFalse)
+		default:
+			sym, ok := c.symbolTable.Resolve(expr.Token.Literal)
+
+			if !ok {
+				return fmt.Errorf("undefined variable %s", expr.Token.Literal)
+			}
+
+			c.emit(code.OpGetGlobal, sym.Index)
 		}
 	}
 

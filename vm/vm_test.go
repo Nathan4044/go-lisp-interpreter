@@ -136,3 +136,13 @@ func TestConditionals(t *testing.T) {
 
 	runVmTests(t, tests)
 }
+
+func TestGlobalDefExpressions(t *testing.T) {
+	tests := []vmTestCase{
+		{"(def one 1) one", 1},
+		{"(def one 1) (def two 2) one", 1},
+		{"(def one 1) (def two one) two", 1},
+	}
+
+	runVmTests(t, tests)
+}
