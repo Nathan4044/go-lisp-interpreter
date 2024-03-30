@@ -135,6 +135,10 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 		integer := &object.Integer{Value: expr.Value}
 
 		c.emit(code.OpConstant, c.addConstant(integer))
+	case *ast.StringLiteral:
+		string := &object.String{Value: expr.Value}
+
+		c.emit(code.OpConstant, c.addConstant(string))
 	case *ast.Identifier:
 		switch expr.String() {
 		case "true":
