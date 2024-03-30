@@ -33,6 +33,14 @@ func New() *Compiler {
 	}
 }
 
+func NewWithState(constants []object.Object, symbolTable *SymbolTable) *Compiler {
+	return &Compiler{
+		instructions: code.Instructions{},
+		constants:    constants,
+		symbolTable:  symbolTable,
+	}
+}
+
 // Compile an AST Expression into bytecode instructions. Return an error if there is
 // a problem during the compilation step
 func (c *Compiler) Compile(expr ast.Expression) error {

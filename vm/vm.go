@@ -34,6 +34,16 @@ func New(bytecode *compiler.Bytecode) *VM {
 	}
 }
 
+func NewWithState(bytecode *compiler.Bytecode, globals []object.Object) *VM {
+	return &VM{
+		instructions: bytecode.Instructions,
+		constants:    bytecode.Constants,
+		stack:        make([]object.Object, StackSize),
+		sp:           0,
+		globals:      globals,
+	}
+}
+
 // Execute the bytecode instructions, using a fetch, decode, execute cycle.
 //
 // Returns an error if something in execution fails.

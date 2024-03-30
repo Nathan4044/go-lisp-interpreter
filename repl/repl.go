@@ -5,8 +5,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"lisp/compiler"
 	"lisp/interpreter"
-	//"lisp/object"
+	"lisp/object"
+	"lisp/vm"
 )
 
 const PROMPT = ">>> "
@@ -16,6 +18,9 @@ const PROMPT = ">>> "
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	//env := object.NewEnvironment(nil)
+	constants := []object.Object{}
+	symbolTable := compiler.NewSymbolTable()
+	globals := make([]object.Object, vm.GlobalSize)
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -30,7 +35,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		//result, errors := interpreter.Run(scanner.Text(), env)
-		result, errors := interpreter.RunCompiled(scanner.Text())
+		result, errors := interpreter.RunCompiled(scanner.Text(), constants, symbolTable, globals)
 
 		if len(errors) > 0 {
 			for _, err := range errors {
