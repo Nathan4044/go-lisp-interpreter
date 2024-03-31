@@ -34,6 +34,8 @@ func New(bytecode *compiler.Bytecode) *VM {
 	}
 }
 
+// Create a new VM instance from the provided bytecode, along with predefined
+// globals so that state can be maintained between VM instances.
 func NewWithState(bytecode *compiler.Bytecode, globals []object.Object) *VM {
 	return &VM{
 		instructions: bytecode.Instructions,
@@ -67,14 +69,22 @@ func (vm *VM) Run() error {
 		case code.OpPop:
 			vm.pop()
 		case code.OpTrue:
-			vm.push(True)
+			err := vm.push(True)
+
+			if err != nil {
+				return err
+			}
 		case code.OpFalse:
-			vm.push(False)
+			err := vm.push(False)
+
+			if err != nil {
+				return err
+			}
 		case code.OpJump:
 			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
 
-			// decrement position so that it is correct when loop
-			// increments it
+			// decrement jump position so that we arrive at the target position
+			// when the cycle increments the instruction pointer
 			ip = pos - 1
 		case code.OpJumpWhenFalse:
 			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
@@ -120,6 +130,7 @@ func (vm *VM) StackTop() object.Object {
 	return vm.stack[vm.sp-1]
 }
 
+// Add an object onto the stack, return an error if the stack is full.
 func (vm *VM) push(o object.Object) error {
 	if vm.sp >= StackSize {
 		return fmt.Errorf("stack overflow")
@@ -131,6 +142,7 @@ func (vm *VM) push(o object.Object) error {
 	return nil
 }
 
+// Return the item from the top of the stack and decrement the stack pointer.
 func (vm *VM) pop() object.Object {
 	o := vm.stack[vm.sp-1]
 
@@ -144,6 +156,7 @@ func (vm *VM) LastPoppedStackElem() object.Object {
 	return vm.stack[vm.sp]
 }
 
+// Evaluate the Object as true or false.
 func isTruthy(o object.Object) bool {
 	return o != False && o != Null
 }
