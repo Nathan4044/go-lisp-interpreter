@@ -157,13 +157,13 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			c.emit(code.OpConstant, c.addConstant(compiledLambda))
 		default:
-			for _, e := range expr.Args {
-				err := c.Compile(e)
+			err := c.Compile(expr.Fn)
 
-				if err != nil {
-					return err
-				}
+			if err != nil {
+				return err
 			}
+
+			c.emit(code.OpCall)
 		}
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: expr.Value}

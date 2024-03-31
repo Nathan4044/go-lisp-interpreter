@@ -20,12 +20,12 @@ type compilerTestCase struct {
 func TestIntegerArithmetic(t *testing.T) {
 	tests := []compilerTestCase{
 		{
-			input:             "(+ 1 2)",
+			input:             "1 2",
 			expectedConstants: []interface{}{1, 2},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
 				code.Make(code.OpConstant, 1),
-				// todo: add call for plus
 				code.Make(code.OpPop),
 			},
 		},
@@ -231,6 +231,47 @@ func TestFunctions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestLambdaCalls(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: "((lambda () 9))",
+			expectedConstants: []interface{}{
+				9,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: "(def func (lambda () 9)) (func)",
+			expectedConstants: []interface{}{
+				9,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpCall, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 
@@ -318,7 +359,6 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
 
 		if err != nil {
-			t.Logf(program.String())
 			t.Fatalf("testInstructions failed: %s", err)
 		}
 
