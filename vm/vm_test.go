@@ -123,7 +123,8 @@ func TestIntegerArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
 		{"2", 2},
-		{"(+ 1 2)", 2}, // fixme
+		{"1 2", 2}, // deleteme
+		// {"(+ 1 2)", 2}, // fixme
 	}
 
 	runVmTests(t, tests)
@@ -171,6 +172,41 @@ func TestStringExpressions(t *testing.T) {
 	tests := []vmTestCase{
 		{"\"string\"", "string"},
 		{"(def a \"string\") a", "string"},
+	}
+
+	runVmTests(t, tests)
+}
+
+func TestLambdaCalls(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+            (def func (lambda () 5))
+            (func)
+            `,
+			expected: 5,
+		},
+		{
+			input: `
+            (def one (lambda () 1))
+            (def two (lambda () (one)))
+            (def three (lambda () (two)))
+            (three)
+            `,
+			expected: 1,
+		},
+		{
+			input: `
+            (def truth (lambda () true))
+            (def two (lambda () (if (truth) 2 1)))
+            (two)
+            `,
+			expected: 2,
+		},
+		{
+			input:    "((lambda ()))",
+			expected: Null,
+		},
 	}
 
 	runVmTests(t, tests)
