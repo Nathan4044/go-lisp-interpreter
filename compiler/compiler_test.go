@@ -180,6 +180,126 @@ func TestStringExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestFunctions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: "(lambda () 5)",
+			expectedConstants: []interface{}{
+				5,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: "(lambda () 5 10)",
+			expectedConstants: []interface{}{
+				5,
+				10,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: "(lambda ())",
+			expectedConstants: []interface{}{
+				[]code.Instructions{
+					code.Make(code.OpNull),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestCompilerScopes(t *testing.T) {
+	compiler := New()
+
+	if compiler.scopeIndex != 0 {
+		t.Errorf("scopeIndex wrong: got=%d want=%d", compiler.scopeIndex, 0)
+	}
+
+	compiler.emit(code.OpTrue)
+
+	compiler.enterScope()
+
+	if compiler.scopeIndex != 1 {
+		t.Errorf("scopeIndex wrong: got=%d want=%d", compiler.scopeIndex, 1)
+	}
+
+	compiler.emit(code.OpFalse)
+
+	if len(compiler.scopes[compiler.scopeIndex].instructions) != 1 {
+		t.Errorf(
+			"instructions length wrong: got=%d want=%d",
+			len(compiler.scopes[compiler.scopeIndex].instructions),
+			1,
+		)
+	}
+
+	last := compiler.scopes[compiler.scopeIndex].lastInstruction
+
+	if last.Opcode != code.OpFalse {
+		t.Errorf(
+			"lastInstruction.OpCode wrong: got=%d want=%d",
+			last, code.OpFalse,
+		)
+	}
+
+	compiler.leaveScope()
+
+	if compiler.scopeIndex != 0 {
+		t.Errorf("scopeIndex wrong: got=%d want=%d", compiler.scopeIndex, 0)
+	}
+
+	compiler.emit(code.OpNull)
+
+	if len(compiler.scopes[compiler.scopeIndex].instructions) != 2 {
+		t.Errorf(
+			"instructions length wrong: got=%d want=%d",
+			len(compiler.scopes[compiler.scopeIndex].instructions),
+			2,
+		)
+	}
+
+	last = compiler.scopes[compiler.scopeIndex].lastInstruction
+
+	if last.Opcode != code.OpNull {
+		t.Errorf(
+			"lastInstruction.OpCode wrong: got=%d want=%d",
+			last, code.OpNull,
+		)
+	}
+
+	previous := compiler.scopes[compiler.scopeIndex].previousInstruction
+
+	if previous.Opcode != code.OpTrue {
+		t.Errorf(
+			"previousInstruction.OpCode wrong: got=%d want=%d",
+			previous, code.OpJump,
+		)
+	}
+}
+
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
@@ -267,6 +387,18 @@ func testConstants(
 
 			if err != nil {
 				return fmt.Errorf("constant %d - testStringObject failed: %s", i, err)
+			}
+		case []code.Instructions:
+			lambda, ok := actual[i].(*object.CompiledLambda)
+
+			if !ok {
+				return fmt.Errorf("constant %d - not a function: %T", actual[i], actual[i])
+			}
+
+			err := testInstructions(constant, lambda.Instructions)
+
+			if err != nil {
+				return fmt.Errorf("constant %d - testInstructions failed: %s", i, err)
 			}
 		}
 	}

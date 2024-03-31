@@ -7,20 +7,22 @@ import (
 	"fmt"
 	"hash/fnv"
 	"lisp/ast"
+	"lisp/code"
 	"strings"
 )
 
 const (
-	INTEGER_OBJ  = "INTEGER"
-	FLOAT_OBJ    = "FLOAT"
-	STRING_OBJ   = "STRING"
-	FUNCTION_OBJ = "FUNCTION"
-	LIST_OBJ     = "LIST"
-	DICT_OBJ     = "DICT"
-	BOOLEAN_OBJ  = "BOOL"
-	LAMBDA_OBJ   = "LAMBDA"
-	NULL_OBJ     = "NULL"
-	ERROR_OBJ    = "ERROR"
+	INTEGER_OBJ           = "INTEGER"
+	FLOAT_OBJ             = "FLOAT"
+	STRING_OBJ            = "STRING"
+	FUNCTION_OBJ          = "FUNCTION"
+	LIST_OBJ              = "LIST"
+	DICT_OBJ              = "DICT"
+	BOOLEAN_OBJ           = "BOOL"
+	LAMBDA_OBJ            = "LAMBDA"
+	NULL_OBJ              = "NULL"
+	ERROR_OBJ             = "ERROR"
+	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION_OBJ"
 )
 
 // The Function type is the definition of a builtin function.
@@ -275,4 +277,19 @@ func (d *Dictionary) Inspect() string {
 	result.WriteString("}")
 
 	return result.String()
+}
+
+// CompiledLambda is an object that holds compiled instructions.
+type CompiledLambda struct {
+	Instructions code.Instructions
+}
+
+func (cl *CompiledLambda) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+
+// Provide a string representation of the compiled lambda, providing its
+// pointer as a means to distinguish between inspected lambdas.
+func (cl *CompiledLambda) Inspect() string {
+	return fmt.Sprintf("CompiledLambda[%p]", cl)
 }

@@ -9,27 +9,49 @@ import (
 	"lisp/object"
 )
 
+// A representation of an instruction.
+type EmittedInstruction struct {
+	Opcode   code.Opcode // Opcode associated with the instruction
+	Position int         // the position in instructions where this instruction begins
+}
+
+// A CompilationScope represents the current level in which instructions are
+// being compiled. This allows for functions to be compiled in their own scope
+// and then returned as instructions for use as its own object.
+type CompilationScope struct {
+	instructions        code.Instructions //instructions generated from Compile
+	lastInstruction     EmittedInstruction
+	previousInstruction EmittedInstruction
+}
+
 // The Compiler is a struct that holds the result of calls to the Compile
-// method
+// method.
 type Compiler struct {
-	instructions code.Instructions // instructions generated from Compile
-	constants    []object.Object   // constant expressions found during Compile
-	symbolTable  *SymbolTable      // a map from a source code symbol to its memory address
+	constants   []object.Object    // constant expressions found during Compile
+	symbolTable *SymbolTable       // a map from a source code symbol to its memory address
+	scopes      []CompilationScope // a stack of currently used scopes
+	scopeIndex  int                // the currently active scope
 }
 
 // Bytecode is a struct containing the instructions produced by a Compiler and
-// returned by the Bytecode method
+// returned by the Bytecode method.
 type Bytecode struct {
 	Instructions code.Instructions // a collection of OpCodes stored as a slice of bytes
 	Constants    []object.Object   // each of the constant values found in the program
 }
 
-// Return the address of a new Compiler instance
+// Return the address of a new Compiler instance.
 func New() *Compiler {
+	mainScope := CompilationScope{
+		instructions:        code.Instructions{},
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
+	}
+
 	return &Compiler{
-		instructions: code.Instructions{},
-		constants:    []object.Object{},
-		symbolTable:  NewSymbolTable(),
+		constants:   []object.Object{},
+		symbolTable: NewSymbolTable(),
+		scopes:      []CompilationScope{mainScope},
 	}
 }
 
@@ -38,15 +60,21 @@ func New() *Compiler {
 //
 // This is to maintain program state between compiler instances.
 func NewWithState(constants []object.Object, symbolTable *SymbolTable) *Compiler {
+	mainScope := CompilationScope{
+		instructions:        code.Instructions{},
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
+	}
+
 	return &Compiler{
-		instructions: code.Instructions{},
-		constants:    constants,
-		symbolTable:  symbolTable,
+		constants:   constants,
+		symbolTable: symbolTable,
+		scopes:      []CompilationScope{mainScope},
 	}
 }
 
 // Compile an AST Expression into bytecode instructions. Return an error if there is
-// a problem during the compilation step
+// a problem during the compilation step.
 func (c *Compiler) Compile(expr ast.Expression) error {
 	switch expr := expr.(type) {
 	case *ast.Program:
@@ -89,6 +117,45 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			c.emit(code.OpSetGlobal, symbol.Index)
 			c.emit(code.OpGetGlobal, symbol.Index)
+		case "lambda":
+			if len(expr.Args) < 1 {
+				return fmt.Errorf("not enough arguments for lambda definition")
+			}
+
+			c.enterScope()
+
+			// lambdaArgs := expr.Args[0]
+			expressions := expr.Args[1:]
+
+			if len(expressions) == 0 {
+				c.emit(code.OpNull)
+			} else {
+				for _, arg := range expr.Args[1 : len(expr.Args)-1] {
+					err := c.Compile(arg)
+
+					if err != nil {
+						return err
+					}
+
+					c.emit(code.OpPop)
+				}
+
+				err := c.Compile(expr.Args[len(expr.Args)-1])
+
+				if err != nil {
+					return err
+				}
+			}
+
+			c.emit(code.OpReturn)
+
+			ins := c.leaveScope()
+
+			compiledLambda := &object.CompiledLambda{
+				Instructions: ins,
+			}
+
+			c.emit(code.OpConstant, c.addConstant(compiledLambda))
 		default:
 			for _, e := range expr.Args {
 				err := c.Compile(e)
@@ -128,11 +195,16 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 	return nil
 }
 
+// returns the instructions from the currently active scope.
+func (c *Compiler) currentInstructions() code.Instructions {
+	return c.scopes[c.scopeIndex].instructions
+}
+
 // Return a Bytecode instance containing the compiled instructions along with
 // a slice of constant values.
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
-		Instructions: c.instructions,
+		Instructions: c.currentInstructions(),
 		Constants:    c.constants,
 	}
 }
@@ -149,13 +221,28 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
 
+	c.setLastInstruction(op, pos)
 	return pos
 }
 
-func (c *Compiler) addInstruction(ins []byte) int {
-	posNewInstruction := len(c.instructions)
+// Set the value of the last instruction emitted in the current scope. Also
+// update the previous instruction emitted.
+func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
+	c.scopes[c.scopeIndex].previousInstruction = c.scopes[c.scopeIndex].lastInstruction
 
-	c.instructions = append(c.instructions, ins...)
+	c.scopes[c.scopeIndex].lastInstruction = EmittedInstruction{
+		Opcode:   op,
+		Position: pos,
+	}
+}
+
+// Append the provided instruction to the instructions of the current scope.
+func (c *Compiler) addInstruction(ins []byte) int {
+	posNewInstruction := len(c.currentInstructions())
+
+	c.scopes[c.scopeIndex].instructions = append(
+		c.scopes[c.scopeIndex].instructions, ins...,
+	)
 
 	return posNewInstruction
 }
@@ -164,15 +251,17 @@ func (c *Compiler) addInstruction(ins []byte) int {
 //
 // Only works for instructions of the same length.
 func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
+	ins := c.currentInstructions()
+
 	for i := 0; i < len(newInstruction); i++ {
-		c.instructions[pos+i] = newInstruction[i]
+		ins[pos+i] = newInstruction[i]
 	}
 }
 
 // Change the operand of the instruction at the provided position to the
 // provided operand.
 func (c *Compiler) changeOperand(opPos int, operand int) {
-	op := code.Opcode(c.instructions[opPos])
+	op := code.Opcode(c.currentInstructions()[opPos])
 
 	newInstruction := code.Make(op, operand)
 
@@ -211,7 +300,7 @@ func (c *Compiler) compileIfExpression(expr *ast.SExpression) error {
 	// to the end of the alternative
 	jumpPos := c.emit(code.OpJump, 9999)
 
-	positionAfterConsequence := len(c.instructions)
+	positionAfterConsequence := len(c.currentInstructions())
 	c.changeOperand(conditionalJumpPos, positionAfterConsequence)
 
 	if len(expr.Args) < 3 {
@@ -227,8 +316,32 @@ func (c *Compiler) compileIfExpression(expr *ast.SExpression) error {
 		}
 	}
 
-	positionAfterAlternative := len(c.instructions)
+	positionAfterAlternative := len(c.currentInstructions())
 	c.changeOperand(jumpPos, positionAfterAlternative)
 
 	return nil
+}
+
+// Push a new scope into the Compiler's scope stack and use it as the active
+// scope.
+func (c *Compiler) enterScope() {
+	scope := CompilationScope{
+		instructions:        code.Instructions{},
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
+	}
+
+	c.scopes = append(c.scopes, scope)
+	c.scopeIndex++
+}
+
+// Pop the currently active scope of the Compiler's scope stack, and return
+// the popped scope's instructions,
+func (c *Compiler) leaveScope() code.Instructions {
+	ins := c.currentInstructions()
+
+	c.scopes = c.scopes[:len(c.scopes)-1]
+	c.scopeIndex--
+
+	return ins
 }
