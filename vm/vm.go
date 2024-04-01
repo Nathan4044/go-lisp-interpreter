@@ -164,18 +164,37 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCall:
-			// TODO: will retrieve the number of args to a lambda call
-			_ = code.ReadUint16(ins[ip+1:])
-			vm.currentFrame().ip += 2
+			argCount := int(ins[ip+1])
+			vm.currentFrame().ip += 1
 
-			lambda, ok := vm.stack[vm.sp-1].(*object.CompiledLambda)
+			// Look for the lambda before the arguments that have been pushed
+			// onto the stack above it.
+			// Extra -1 is because vm.sp points to the space after the top of
+			// the stack.
+			lambda, ok := vm.stack[vm.sp-argCount-1].(*object.CompiledLambda)
 
 			if !ok {
 				return fmt.Errorf("calling non-function")
 			}
 
-			frame := NewFrame(lambda, vm.sp)
+			if argCount != lambda.ParameterCount {
+				return fmt.Errorf(
+					"wrong number of arguments: expected=%d got=%d",
+					lambda.ParameterCount, argCount,
+				)
+			}
+
+			frame := NewFrame(lambda, vm.sp-argCount)
+
 			vm.pushFrame(frame)
+			// Reserve space on the stack for local bindings:
+			//
+			// The space between frame.basePointer (the current stack pointer)
+			// and fn.LocalsCount reserves fn.LocalsCount number of spaces for
+			// paramaters and local bindings, since parameters are a special
+			// case of local bindings. This allows the stack beyond this point
+			// to be used as normal in instruction execution.
+			vm.sp = frame.basePointer + lambda.LocalsCount
 		case code.OpReturn:
 			returnValue := vm.pop()
 

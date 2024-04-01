@@ -127,13 +127,34 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			c.enterScope()
 
-			// lambdaArgs := expr.Args[0]
+			paramList, ok := expr.Args[0].(*ast.SExpression)
+
+			if !ok {
+				return fmt.Errorf("provided args must be a list")
+			}
+
+			params := []ast.Expression{}
+
+			if paramList.Fn != nil {
+				params = append([]ast.Expression{paramList.Fn}, paramList.Args...)
+			}
+
+			for _, p := range params {
+				param, ok := p.(*ast.Identifier)
+
+				if !ok {
+					return fmt.Errorf("function parameters must be identifiers, got=%T(%+v)", p, params)
+				}
+
+				c.symbolTable.Define(param.String())
+			}
+
 			expressions := expr.Args[1:]
 
 			if len(expressions) == 0 {
 				c.emit(code.OpNull)
 			} else {
-				for _, arg := range expr.Args[1 : len(expr.Args)-1] {
+				for _, arg := range expressions[:len(expressions)-1] {
 					err := c.Compile(arg)
 
 					if err != nil {
@@ -156,8 +177,9 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 			ins := c.leaveScope()
 
 			compiledLambda := &object.CompiledLambda{
-				Instructions: ins,
-				LocalsCount:  localsCount,
+				Instructions:   ins,
+				LocalsCount:    localsCount,
+				ParameterCount: len(params),
 			}
 
 			c.emit(code.OpConstant, c.addConstant(compiledLambda))
@@ -168,7 +190,15 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				return err
 			}
 
-			c.emit(code.OpCall)
+			for _, a := range expr.Args {
+				err := c.Compile(a)
+
+				if err != nil {
+					return err
+				}
+			}
+
+			c.emit(code.OpCall, len(expr.Args))
 		}
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: expr.Value}

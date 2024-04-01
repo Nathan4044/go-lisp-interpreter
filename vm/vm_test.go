@@ -234,7 +234,91 @@ func TestLambdaCalls(t *testing.T) {
             `,
 			expected: 16,
 		},
+		{
+			input: `
+            (def identity (lambda (a) a))
+            (identity 4)
+            `,
+			expected: 4,
+		},
+		{
+			input: `
+            (def threeIfTrue 
+              (lambda (n)
+                (def result (if n
+                              3
+                              0))
+                result))
+            (threeIfTrue true)
+            `,
+			expected: 3,
+		},
+		{
+			input: `
+            (def four 4)
+            (def threeElseFour
+              (lambda (n)
+                (def result (if n
+                              3
+                              four))
+                result))
+            (def outer
+              (lambda (n)
+                (def result (threeElseFour n))
+                result))
+            (outer false)
+            `,
+			expected: 4,
+		},
 	}
 
 	runVmTests(t, tests)
+}
+
+func TestLambdasWithWrongArgCount(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input:    "((lambda () 1) 1)",
+			expected: "wrong number of arguments: expected=0 got=1",
+		},
+		{
+			input:    "((lambda () 1) 1 2)",
+			expected: "wrong number of arguments: expected=0 got=2",
+		},
+		{
+			input:    "((lambda (a) a))",
+			expected: "wrong number of arguments: expected=1 got=0",
+		},
+		{
+			input:    "((lambda (a b) a b) 1)",
+			expected: "wrong number of arguments: expected=2 got=1",
+		},
+	}
+
+	for _, tt := range tests {
+		program := parse(tt.input)
+		comp := compiler.New()
+
+		err := comp.Compile(program)
+
+		if err != nil {
+			t.Fatalf("compiler error: %s", err)
+		}
+
+		vm := New(comp.Bytecode())
+
+		err = vm.Run()
+
+		if err == nil {
+			t.Fatalf("expected VM error but none occurred.")
+		}
+
+		if err.Error() != tt.expected {
+			t.Fatalf(
+				"wrong error occurred: expected=%q got=%q",
+				tt.expected,
+				err,
+			)
+		}
+	}
 }

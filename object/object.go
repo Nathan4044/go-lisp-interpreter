@@ -281,8 +281,9 @@ func (d *Dictionary) Inspect() string {
 
 // CompiledLambda is an object that holds compiled instructions.
 type CompiledLambda struct {
-	Instructions code.Instructions
-	LocalsCount  int
+	Instructions   code.Instructions
+	LocalsCount    int
+	ParameterCount int
 }
 
 func (cl *CompiledLambda) Type() ObjectType {
