@@ -128,7 +128,6 @@ func TestGlobalDefExpressions(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -138,11 +137,9 @@ func TestGlobalDefExpressions(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpPop),
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpSetGlobal, 1),
-				code.Make(code.OpGetGlobal, 1),
 				code.Make(code.OpPop),
 			},
 		},
@@ -152,11 +149,83 @@ func TestGlobalDefExpressions(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpPop),
 				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpSetGlobal, 1),
-				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestLocalDefExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+            (def x 10)
+            (lambda () x)
+            `,
+			expectedConstants: []interface{}{
+				10,
+				[]code.Instructions{
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (lambda ()
+              (def x 10)
+              x)
+            `,
+			expectedConstants: []interface{}{
+				10,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (lambda ()
+              (def x 10)
+              (def y 15)
+              x)
+            `,
+			expectedConstants: []interface{}{
+				10,
+				15,
+				[]code.Instructions{
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpSetLocal, 1),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
 				code.Make(code.OpPop),
 			},
 		},
@@ -260,7 +329,6 @@ func TestLambdaCalls(t *testing.T) {
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpSetGlobal, 0),
-				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpPop),
 				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpCall, 0),
@@ -280,6 +348,8 @@ func TestCompilerScopes(t *testing.T) {
 	}
 
 	compiler.emit(code.OpTrue)
+
+	globalScope := compiler.symbolTable
 
 	compiler.enterScope()
 
@@ -306,7 +376,15 @@ func TestCompilerScopes(t *testing.T) {
 		)
 	}
 
+	if compiler.symbolTable.outer != globalScope {
+		t.Errorf("compiler did not enter new symbol table")
+	}
+
 	compiler.leaveScope()
+
+	if compiler.symbolTable != globalScope {
+		t.Errorf("compiler modified globalScope incorrectly")
+	}
 
 	if compiler.scopeIndex != 0 {
 		t.Errorf("scopeIndex wrong: got=%d want=%d", compiler.scopeIndex, 0)

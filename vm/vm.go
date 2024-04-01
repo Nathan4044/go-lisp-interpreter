@@ -135,7 +135,7 @@ func (vm *VM) Run() error {
 			index := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 
-			vm.globals[index] = vm.pop()
+			vm.globals[index] = vm.stack[vm.sp-1]
 		case code.OpGetGlobal:
 			index := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2

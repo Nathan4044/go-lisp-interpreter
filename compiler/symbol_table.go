@@ -5,6 +5,7 @@ type SymbolScope string
 
 const (
 	GlobalScope SymbolScope = "GLOBAL"
+	LocalScope  SymbolScope = "LOCAL"
 )
 
 // Symbol is an instance of a defined identifier.
@@ -18,12 +19,20 @@ type Symbol struct {
 type SymbolTable struct {
 	store map[string]Symbol
 	count int
+	outer *SymbolTable
 }
 
 // Create a new empty SymbolTable.
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
 		store: make(map[string]Symbol),
+	}
+}
+
+func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
+	return &SymbolTable{
+		store: make(map[string]Symbol),
+		outer: outer,
 	}
 }
 
@@ -37,8 +46,13 @@ func (st *SymbolTable) Define(s string) Symbol {
 
 	sym = Symbol{
 		Name:  s,
-		Scope: GlobalScope,
 		Index: st.count,
+	}
+
+	if st.outer == nil {
+		sym.Scope = GlobalScope
+	} else {
+		sym.Scope = LocalScope
 	}
 
 	st.store[s] = sym
@@ -50,6 +64,10 @@ func (st *SymbolTable) Define(s string) Symbol {
 // Retrieve the Symbol associated with the given identifier.
 func (st *SymbolTable) Resolve(s string) (Symbol, bool) {
 	sym, ok := st.store[s]
+
+	if !ok && st.outer != nil {
+		sym, ok = st.outer.Resolve(s)
+	}
 
 	return sym, ok
 }

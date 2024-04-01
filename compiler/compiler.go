@@ -115,8 +115,11 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			symbol := c.symbolTable.Define(name.Token.Literal)
 
-			c.emit(code.OpSetGlobal, symbol.Index)
-			c.emit(code.OpGetGlobal, symbol.Index)
+			if c.symbolTable.outer == nil {
+				c.emit(code.OpSetGlobal, symbol.Index)
+			} else {
+				c.emit(code.OpSetLocal, symbol.Index)
+			}
 		case "lambda":
 			if len(expr.Args) < 1 {
 				return fmt.Errorf("not enough arguments for lambda definition")
@@ -188,7 +191,11 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				return fmt.Errorf("undefined variable %s", expr.Token.Literal)
 			}
 
-			c.emit(code.OpGetGlobal, sym.Index)
+			if sym.Scope == GlobalScope {
+				c.emit(code.OpGetGlobal, sym.Index)
+			} else {
+				c.emit(code.OpGetLocal, sym.Index)
+			}
 		}
 	}
 
@@ -333,6 +340,8 @@ func (c *Compiler) enterScope() {
 
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
+
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 }
 
 // Pop the currently active scope of the Compiler's scope stack, and return
@@ -342,6 +351,8 @@ func (c *Compiler) leaveScope() code.Instructions {
 
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIndex--
+
+	c.symbolTable = c.symbolTable.outer
 
 	return ins
 }
