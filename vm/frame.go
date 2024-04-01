@@ -8,14 +8,20 @@ import (
 // Frame holds the current VM execution state.
 type Frame struct {
 	Lambda *object.CompiledLambda
-	ip     int // instruction pointer for this frame
+	// Instruction pointer for this frame.
+	ip int
+	// Pointer to the base of the stack before lambda execution.
+	// Used for interacting with local bindings, which are stored
+	// on top of the stack.
+	basePointer int
 }
 
 // Create a new VM with the provided compiled lambda.
-func NewFrame(lambda *object.CompiledLambda) *Frame {
+func NewFrame(lambda *object.CompiledLambda, basePointer int) *Frame {
 	return &Frame{
-		Lambda: lambda,
-		ip:     -1, // so that ip == 0 after increment
+		Lambda:      lambda,
+		ip:          -1, // so that ip == 0 after increment
+		basePointer: basePointer,
 	}
 }
 

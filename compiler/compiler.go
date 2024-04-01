@@ -152,10 +152,12 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			c.emit(code.OpReturn)
 
+			localsCount := c.symbolTable.count
 			ins := c.leaveScope()
 
 			compiledLambda := &object.CompiledLambda{
 				Instructions: ins,
+				LocalsCount:  localsCount,
 			}
 
 			c.emit(code.OpConstant, c.addConstant(compiledLambda))

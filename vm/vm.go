@@ -32,7 +32,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 		Instructions: bytecode.Instructions,
 	}
 
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -54,7 +54,7 @@ func NewWithState(bytecode *compiler.Bytecode, globals []object.Object) *VM {
 		Instructions: bytecode.Instructions,
 	}
 
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -145,6 +145,24 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpSetLocal:
+			index := int(ins[ip+1])
+			vm.currentFrame().ip += 1
+
+			basePointer := vm.currentFrame().basePointer
+
+			vm.stack[basePointer+index] = vm.stack[vm.sp-1]
+		case code.OpGetLocal:
+			index := int(ins[ip+1])
+			vm.currentFrame().ip += 1
+
+			basePointer := vm.currentFrame().basePointer
+
+			err := vm.push(vm.stack[basePointer+index])
+
+			if err != nil {
+				return err
+			}
 		case code.OpCall:
 			// TODO: will retrieve the number of args to a lambda call
 			_ = code.ReadUint16(ins[ip+1:])
@@ -156,13 +174,13 @@ func (vm *VM) Run() error {
 				return fmt.Errorf("calling non-function")
 			}
 
-			frame := NewFrame(lambda)
+			frame := NewFrame(lambda, vm.sp)
 			vm.pushFrame(frame)
 		case code.OpReturn:
 			returnValue := vm.pop()
 
-			vm.popFrame()
-			vm.pop()
+			frame := vm.popFrame()
+			vm.sp = frame.basePointer - 1
 
 			err := vm.push(returnValue)
 

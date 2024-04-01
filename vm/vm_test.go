@@ -215,6 +215,25 @@ func TestLambdaCalls(t *testing.T) {
             `,
 			expected: 1,
 		},
+		{
+			input: `
+            (def one (lambda () (def num 1) num))
+            (one)
+            `,
+			expected: 1,
+		},
+		{
+			input: `
+            (def wrong (lambda () 
+                         (def result false) 
+                         result))
+            (def answer (lambda ()
+                          (def result 16)
+                          result))
+            (if (wrong) 0 (answer))
+            `,
+			expected: 16,
+		},
 	}
 
 	runVmTests(t, tests)
