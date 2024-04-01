@@ -207,6 +207,14 @@ func TestLambdaCalls(t *testing.T) {
 			input:    "((lambda ()))",
 			expected: Null,
 		},
+		{
+			input: `
+            (def one (lambda () 1))
+            (def oneBuilder (lambda () one))
+            ((oneBuilder))
+            `,
+			expected: 1,
+		},
 	}
 
 	runVmTests(t, tests)
