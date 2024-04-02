@@ -1,20 +1,16 @@
 // A collection of functions for calculating equality between objects.
-package evaluator
-
-import (
-	"lisp/object"
-)
+package object
 
 // Compare list of objects to ensure all have
 // the same value as the initially given number.
-func numsEqual(first float64, rest ...object.Object) *object.BooleanObject {
+func numsEqual(first float64, rest ...Object) *BooleanObject {
 	for _, arg := range rest {
 		var num float64
 
 		switch obj := arg.(type) {
-		case *object.Integer:
+		case *Integer:
 			num = float64(obj.Value)
-		case *object.Float:
+		case *Float:
 			num = obj.Value
 		default:
 			return FALSE
@@ -30,9 +26,9 @@ func numsEqual(first float64, rest ...object.Object) *object.BooleanObject {
 
 // Compare list of objects to ensure all have
 // the same value as the initially given string.
-func stringsEqual(first *object.String, rest ...object.Object) *object.BooleanObject {
+func stringsEqual(first *String, rest ...Object) *BooleanObject {
 	for _, arg := range rest {
-		str, ok := arg.(*object.String)
+		str, ok := arg.(*String)
 
 		if !ok {
 			return FALSE
@@ -48,9 +44,9 @@ func stringsEqual(first *object.String, rest ...object.Object) *object.BooleanOb
 
 // Compare list of objects to ensure all have
 // the same value as the initially given bool.
-func boolEqual(first *object.BooleanObject, rest ...object.Object) *object.BooleanObject {
+func boolEqual(first *BooleanObject, rest ...Object) *BooleanObject {
 	for _, arg := range rest {
-		boolean, ok := arg.(*object.BooleanObject)
+		boolean, ok := arg.(*BooleanObject)
 
 		if !ok {
 			return FALSE
@@ -66,9 +62,9 @@ func boolEqual(first *object.BooleanObject, rest ...object.Object) *object.Boole
 
 // Compare list of objects to ensure all have
 // the same value as the initially given lambda.
-func lambdasEqual(first *object.LambdaObject, rest ...object.Object) *object.BooleanObject {
+func lambdasEqual(first *LambdaObject, rest ...Object) *BooleanObject {
 	for _, arg := range rest {
-		lambda, ok := arg.(*object.LambdaObject)
+		lambda, ok := arg.(*LambdaObject)
 
 		if !ok {
 			return FALSE
@@ -84,9 +80,9 @@ func lambdasEqual(first *object.LambdaObject, rest ...object.Object) *object.Boo
 
 // Compare list of objects to ensure all have
 // the same value as the initially given function.
-func functionsEqual(first *object.FunctionObject, rest ...object.Object) *object.BooleanObject {
+func functionsEqual(first *FunctionObject, rest ...Object) *BooleanObject {
 	for _, arg := range rest {
-		function, ok := arg.(*object.FunctionObject)
+		function, ok := arg.(*FunctionObject)
 
 		if !ok {
 			return FALSE

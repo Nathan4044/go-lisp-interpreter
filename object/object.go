@@ -26,7 +26,7 @@ const (
 )
 
 // The Function type is the definition of a builtin function.
-type Function func(env *Environment, args ...Object) Object
+type Function func(args ...Object) Object
 
 type ObjectType string
 
@@ -112,8 +112,8 @@ func (l *List) Inspect() string {
 // This provides the ability to associate builtin functions as
 // a lisp Object.
 type FunctionObject struct {
-	Fn   Function
 	Name string
+	Fn   Function
 }
 
 func (f *FunctionObject) Type() ObjectType {

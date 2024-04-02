@@ -12,9 +12,9 @@ const GlobalSize = 65536
 
 const MaxFrames = 1024
 
-var True = &object.BooleanObject{Value: true}
-var False = &object.BooleanObject{Value: false}
-var Null = &object.Null{}
+var True = object.TRUE
+var False = object.FALSE
+var Null = object.NULL
 
 // VM is used to execute the bytecode it contains.
 type VM struct {

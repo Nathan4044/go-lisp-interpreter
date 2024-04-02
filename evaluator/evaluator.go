@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	TRUE  = &object.BooleanObject{Value: true}
-	FALSE = &object.BooleanObject{Value: false}
-	NULL  = &object.Null{}
+	TRUE  = object.TRUE
+	FALSE = object.FALSE
+	NULL  = object.NULL
 )
 
 // Recursively evaluate a given expression and return a final value.
@@ -75,7 +75,7 @@ func evaluateSExpression(e *ast.SExpression, env *object.Environment) object.Obj
 
 	switch fnExpression := fnExpression.(type) {
 	case *object.FunctionObject:
-		return fnExpression.Fn(env, args...)
+		return fnExpression.Fn(args...)
 	case *object.LambdaObject:
 		return evalLambda(e.Fn.String(), fnExpression, args...)
 	default:
@@ -106,7 +106,7 @@ func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 	fn, ok := builtins[i.String()]
 
 	if ok {
-		return &object.FunctionObject{Fn: fn, Name: i.String()}
+		return fn
 	}
 
 	return env.Get(i.String())
@@ -152,7 +152,7 @@ func evalLambda(lambdaName string, lambda *object.LambdaObject, args ...object.O
 // evaluate either the consequence or alternative.
 func evaluateIfExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	if len(e.Args) < 2 || len(e.Args) > 3 {
-		return wrongNumOfArgsError("if", "2 or 3", len(e.Args))
+		return object.WrongNumOfArgsError("if", "2 or 3", len(e.Args))
 	}
 
 	obj := Evaluate(e.Args[0], env)
@@ -182,7 +182,7 @@ func evaluateIfExpression(e *ast.SExpression, env *object.Environment) object.Ob
 // Otherwise return error object.
 func evaluateDefExpression(e *ast.SExpression, env *object.Environment) object.Object {
 	if len(e.Args) != 2 {
-		return wrongNumOfArgsError("def", "2", len(e.Args))
+		return object.WrongNumOfArgsError("def", "2", len(e.Args))
 	}
 
 	ident, ok := e.Args[0].(*ast.Identifier)
@@ -213,7 +213,7 @@ func evaluateLambdaExpression(e *ast.SExpression, env *object.Environment) objec
 	args := e.Args
 
 	if len(args) < 2 {
-		return wrongNumOfArgsError("lambda", "at least 2", len(args))
+		return object.WrongNumOfArgsError("lambda", "at least 2", len(args))
 	}
 
 	argsList, ok := args[0].(*ast.SExpression)
