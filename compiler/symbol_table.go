@@ -1,7 +1,5 @@
 package compiler
 
-import "lisp/object"
-
 // The scope which the Symbol is defined for.
 type SymbolScope string
 
@@ -29,10 +27,6 @@ type SymbolTable struct {
 func NewSymbolTable() *SymbolTable {
 	st := &SymbolTable{
 		store: make(map[string]Symbol),
-	}
-
-	for i, v := range object.Builtins {
-		st.DefineBuiltin(i, v.Name)
 	}
 
 	return st

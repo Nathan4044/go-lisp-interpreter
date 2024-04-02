@@ -163,6 +163,15 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpGetBuiltin:
+			index := int(ins[ip+1])
+			vm.currentFrame().ip += 1
+
+			err := vm.push(object.Builtins[index])
+
+			if err != nil {
+				return err
+			}
 		case code.OpCall:
 			argCount := int(ins[ip+1])
 			vm.currentFrame().ip += 1
@@ -171,30 +180,40 @@ func (vm *VM) Run() error {
 			// onto the stack above it.
 			// Extra -1 is because vm.sp points to the space after the top of
 			// the stack.
-			lambda, ok := vm.stack[vm.sp-argCount-1].(*object.CompiledLambda)
+			switch lambda := vm.stack[vm.sp-argCount-1].(type) {
+			case *object.CompiledLambda:
+				if argCount != lambda.ParameterCount {
+					return fmt.Errorf(
+						"wrong number of arguments: expected=%d got=%d",
+						lambda.ParameterCount, argCount,
+					)
+				}
 
-			if !ok {
+				frame := NewFrame(lambda, vm.sp-argCount)
+
+				vm.pushFrame(frame)
+				// Reserve space on the stack for local bindings:
+				//
+				// The space between frame.basePointer (the current stack pointer)
+				// and fn.LocalsCount reserves fn.LocalsCount number of spaces for
+				// paramaters and local bindings, since parameters are a special
+				// case of local bindings. This allows the stack beyond this point
+				// to be used as normal in instruction execution.
+				vm.sp = frame.basePointer + lambda.LocalsCount
+			case *object.FunctionObject:
+				args := vm.stack[vm.sp-argCount : vm.sp]
+				result := lambda.Fn(args...)
+
+				vm.sp = vm.sp - argCount - 1
+
+				err := vm.push(result)
+
+				if err != nil {
+					return err
+				}
+			default:
 				return fmt.Errorf("calling non-function")
 			}
-
-			if argCount != lambda.ParameterCount {
-				return fmt.Errorf(
-					"wrong number of arguments: expected=%d got=%d",
-					lambda.ParameterCount, argCount,
-				)
-			}
-
-			frame := NewFrame(lambda, vm.sp-argCount)
-
-			vm.pushFrame(frame)
-			// Reserve space on the stack for local bindings:
-			//
-			// The space between frame.basePointer (the current stack pointer)
-			// and fn.LocalsCount reserves fn.LocalsCount number of spaces for
-			// paramaters and local bindings, since parameters are a special
-			// case of local bindings. This allows the stack beyond this point
-			// to be used as normal in instruction execution.
-			vm.sp = frame.basePointer + lambda.LocalsCount
 		case code.OpReturn:
 			returnValue := vm.pop()
 

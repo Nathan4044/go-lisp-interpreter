@@ -19,8 +19,12 @@ func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	//env := object.NewEnvironment(nil)
 	constants := []object.Object{}
-	symbolTable := compiler.NewSymbolTable()
 	globals := make([]object.Object, vm.GlobalSize)
+	symbolTable := compiler.NewSymbolTable()
+
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
 
 	for {
 		fmt.Fprintf(out, PROMPT)

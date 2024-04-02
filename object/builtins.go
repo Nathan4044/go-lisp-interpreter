@@ -396,12 +396,16 @@ var Builtins = []*FunctionObject{
 				return WrongNumOfArgsError("len", "1", len(args))
 			}
 
-			if args[0].Type() != LIST_OBJ {
+			switch args[0].Type() {
+			case LIST_OBJ:
+				list := args[0].(*List)
+				return &Integer{Value: int64(len(list.Values))}
+			case STRING_OBJ:
+				str := args[0].(*String)
+				return &Integer{Value: int64(len(str.Value))}
+			default:
 				return BadTypeError("len", args[0])
 			}
-
-			list := args[0].(*List)
-			return &Integer{Value: int64(len(list.Values))}
 		},
 	},
 	// Takes two arguments, a list and an

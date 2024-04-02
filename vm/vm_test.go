@@ -112,6 +112,17 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 		if err != nil {
 			t.Errorf("testStringObject failed: %s", err)
 		}
+	case *object.ErrorObject:
+		errObj, ok := actual.(*object.ErrorObject)
+
+		if !ok {
+			t.Errorf("object is not error: %T(%+v)", actual, actual)
+		}
+
+		if errObj.Error != expected.Error {
+			t.Errorf("incorrect error message: want=%q got=%q",
+				expected.Error, errObj.Error)
+		}
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not null: %T(%+v)", actual, actual)
@@ -321,4 +332,24 @@ func TestLambdasWithWrongArgCount(t *testing.T) {
 			)
 		}
 	}
+}
+
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []vmTestCase{
+		{"(+ 1 2)", 3},
+		{"(+ 1 2 3)", 6},
+		{`(len "hello")`, 5},
+		{
+			`(len 1)`,
+			object.ErrorObject{
+				Error: "",
+			},
+		},
+		{
+			`(print "hello")`,
+			Null,
+		},
+	}
+
+	runVmTests(t, tests)
 }
