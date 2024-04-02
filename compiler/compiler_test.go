@@ -390,6 +390,54 @@ func TestLambdaCalls(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestBuiltinReferences(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+            (+ 1 2)
+            (= 1 1 2)
+            `,
+			expectedConstants: []interface{}{
+				1, 2, 1, 1, 2,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpGetBuiltin, 0),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpCall, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetBuiltin, 5),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpCall, 3),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (lambda () (+ 2 3))
+            `,
+			expectedConstants: []interface{}{
+				2, 3,
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltin, 0),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpConstant, 1),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 

@@ -12,7 +12,7 @@ var NULL = &Null{}
 
 // A map of all the built in functions in the interpreter
 
-var builtins = []*FunctionObject{
+var Builtins = []*FunctionObject{
 	{
 		"+",
 		func(args ...Object) Object {
@@ -594,7 +594,7 @@ var builtins = []*FunctionObject{
 }
 
 func GetBuiltinByName(name string) *FunctionObject {
-	for _, builtin := range builtins {
+	for _, builtin := range Builtins {
 		if builtin.Name == name {
 			return builtin
 		}

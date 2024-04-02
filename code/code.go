@@ -31,6 +31,8 @@ const (
 	OpReturn
 	OpGetLocal
 	OpSetLocal
+	OpEmptyList
+	OpGetBuiltin
 )
 
 var definitions = map[Opcode]*Definition{
@@ -47,6 +49,8 @@ var definitions = map[Opcode]*Definition{
 	OpReturn:        {"OpReturn", []int{}},
 	OpGetLocal:      {"OpGetLocal", []int{1}},
 	OpSetLocal:      {"OpSetLocal", []int{1}},
+	OpEmptyList:     {"OpEmptyList", []int{}},
+	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the

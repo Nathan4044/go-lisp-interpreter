@@ -1,11 +1,14 @@
 package compiler
 
+import "lisp/object"
+
 // The scope which the Symbol is defined for.
 type SymbolScope string
 
 const (
-	GlobalScope SymbolScope = "GLOBAL"
-	LocalScope  SymbolScope = "LOCAL"
+	GlobalScope  SymbolScope = "GLOBAL"
+	LocalScope   SymbolScope = "LOCAL"
+	BuiltinScope SymbolScope = "BUILTIN"
 )
 
 // Symbol is an instance of a defined identifier.
@@ -24,16 +27,21 @@ type SymbolTable struct {
 
 // Create a new empty SymbolTable.
 func NewSymbolTable() *SymbolTable {
-	return &SymbolTable{
+	st := &SymbolTable{
 		store: make(map[string]Symbol),
 	}
+
+	for i, v := range object.Builtins {
+		st.DefineBuiltin(i, v.Name)
+	}
+
+	return st
 }
 
 func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
-	return &SymbolTable{
-		store: make(map[string]Symbol),
-		outer: outer,
-	}
+	st := NewSymbolTable()
+	st.outer = outer
+	return st
 }
 
 // Define a symbol within the SymbolTable associated with the given identifier.
@@ -57,6 +65,18 @@ func (st *SymbolTable) Define(s string) Symbol {
 
 	st.store[s] = sym
 	st.count++
+
+	return sym
+}
+
+func (st *SymbolTable) DefineBuiltin(index int, name string) Symbol {
+	sym := Symbol{
+		Name:  name,
+		Index: index,
+		Scope: BuiltinScope,
+	}
+
+	st.store[name] = sym
 
 	return sym
 }

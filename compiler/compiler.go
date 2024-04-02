@@ -89,116 +89,121 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 			c.emit(code.OpPop)
 		}
 	case *ast.SExpression:
-		switch expr.Fn.String() {
-		case "if":
-			err := c.compileIfExpression(expr)
+		if expr.Fn == nil {
+			c.emit(code.OpEmptyList)
+		} else {
 
-			if err != nil {
-				return err
-			}
-		case "def":
-			if len(expr.Args) != 2 {
-				return fmt.Errorf("incorrect number of values in def expression")
-			}
+			switch expr.Fn.String() {
+			case "if":
+				err := c.compileIfExpression(expr)
 
-			err := c.Compile(expr.Args[1])
-
-			if err != nil {
-				return err
-			}
-
-			name, ok := expr.Args[0].(*ast.Identifier)
-
-			if !ok {
-				return fmt.Errorf("first argument to def must be identifier")
-			}
-
-			symbol := c.symbolTable.Define(name.Token.Literal)
-
-			if c.symbolTable.outer == nil {
-				c.emit(code.OpSetGlobal, symbol.Index)
-			} else {
-				c.emit(code.OpSetLocal, symbol.Index)
-			}
-		case "lambda":
-			if len(expr.Args) < 1 {
-				return fmt.Errorf("not enough arguments for lambda definition")
-			}
-
-			c.enterScope()
-
-			paramList, ok := expr.Args[0].(*ast.SExpression)
-
-			if !ok {
-				return fmt.Errorf("provided args must be a list")
-			}
-
-			params := []ast.Expression{}
-
-			if paramList.Fn != nil {
-				params = append([]ast.Expression{paramList.Fn}, paramList.Args...)
-			}
-
-			for _, p := range params {
-				param, ok := p.(*ast.Identifier)
-
-				if !ok {
-					return fmt.Errorf("function parameters must be identifiers, got=%T(%+v)", p, params)
+				if err != nil {
+					return err
+				}
+			case "def":
+				if len(expr.Args) != 2 {
+					return fmt.Errorf("incorrect number of values in def expression")
 				}
 
-				c.symbolTable.Define(param.String())
-			}
+				err := c.Compile(expr.Args[1])
 
-			expressions := expr.Args[1:]
+				if err != nil {
+					return err
+				}
 
-			if len(expressions) == 0 {
-				c.emit(code.OpNull)
-			} else {
-				for _, arg := range expressions[:len(expressions)-1] {
-					err := c.Compile(arg)
+				name, ok := expr.Args[0].(*ast.Identifier)
+
+				if !ok {
+					return fmt.Errorf("first argument to def must be identifier")
+				}
+
+				symbol := c.symbolTable.Define(name.Token.Literal)
+
+				if c.symbolTable.outer == nil {
+					c.emit(code.OpSetGlobal, symbol.Index)
+				} else {
+					c.emit(code.OpSetLocal, symbol.Index)
+				}
+			case "lambda":
+				if len(expr.Args) < 1 {
+					return fmt.Errorf("not enough arguments for lambda definition")
+				}
+
+				c.enterScope()
+
+				paramList, ok := expr.Args[0].(*ast.SExpression)
+
+				if !ok {
+					return fmt.Errorf("provided args must be a list")
+				}
+
+				params := []ast.Expression{}
+
+				if paramList.Fn != nil {
+					params = append([]ast.Expression{paramList.Fn}, paramList.Args...)
+				}
+
+				for _, p := range params {
+					param, ok := p.(*ast.Identifier)
+
+					if !ok {
+						return fmt.Errorf("function parameters must be identifiers, got=%T(%+v)", p, params)
+					}
+
+					c.symbolTable.Define(param.String())
+				}
+
+				expressions := expr.Args[1:]
+
+				if len(expressions) == 0 {
+					c.emit(code.OpNull)
+				} else {
+					for _, arg := range expressions[:len(expressions)-1] {
+						err := c.Compile(arg)
+
+						if err != nil {
+							return err
+						}
+
+						c.emit(code.OpPop)
+					}
+
+					err := c.Compile(expr.Args[len(expr.Args)-1])
 
 					if err != nil {
 						return err
 					}
-
-					c.emit(code.OpPop)
 				}
 
-				err := c.Compile(expr.Args[len(expr.Args)-1])
+				c.emit(code.OpReturn)
+
+				localsCount := c.symbolTable.count
+				ins := c.leaveScope()
+
+				compiledLambda := &object.CompiledLambda{
+					Instructions:   ins,
+					LocalsCount:    localsCount,
+					ParameterCount: len(params),
+				}
+
+				c.emit(code.OpConstant, c.addConstant(compiledLambda))
+			default:
+				err := c.Compile(expr.Fn)
 
 				if err != nil {
 					return err
 				}
-			}
 
-			c.emit(code.OpReturn)
+				for _, a := range expr.Args {
+					err := c.Compile(a)
 
-			localsCount := c.symbolTable.count
-			ins := c.leaveScope()
-
-			compiledLambda := &object.CompiledLambda{
-				Instructions:   ins,
-				LocalsCount:    localsCount,
-				ParameterCount: len(params),
-			}
-
-			c.emit(code.OpConstant, c.addConstant(compiledLambda))
-		default:
-			err := c.Compile(expr.Fn)
-
-			if err != nil {
-				return err
-			}
-
-			for _, a := range expr.Args {
-				err := c.Compile(a)
-
-				if err != nil {
-					return err
+					if err != nil {
+						return err
+					}
 				}
-			}
 
-			c.emit(code.OpCall, len(expr.Args))
+				c.emit(code.OpCall, len(expr.Args))
+			}
 		}
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: expr.Value}
@@ -225,6 +230,8 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 			if sym.Scope == GlobalScope {
 				c.emit(code.OpGetGlobal, sym.Index)
+			} else if sym.Scope == BuiltinScope {
+				c.emit(code.OpGetBuiltin, sym.Index)
 			} else {
 				c.emit(code.OpGetLocal, sym.Index)
 			}

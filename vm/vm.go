@@ -206,6 +206,12 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpEmptyList:
+			err := vm.push(&object.List{})
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 
