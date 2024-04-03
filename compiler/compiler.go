@@ -192,7 +192,7 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 					ParameterCount: len(params),
 				}
 
-				c.emit(code.OpConstant, c.addConstant(compiledLambda))
+				c.emit(code.OpClosure, c.addConstant(compiledLambda), 0)
 			default:
 				err := c.Compile(expr.Fn)
 

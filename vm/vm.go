@@ -28,11 +28,12 @@ type VM struct {
 
 // Create a new VM instance from the provided bytecode.
 func New(bytecode *compiler.Bytecode) *VM {
-	mainFn := &object.CompiledLambda{
+	mainLambda := &object.CompiledLambda{
 		Instructions: bytecode.Instructions,
 	}
+	mainClosure := &object.Closure{Lambda: mainLambda}
 
-	mainFrame := NewFrame(mainFn, 0)
+	mainFrame := NewFrame(mainClosure, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -50,11 +51,12 @@ func New(bytecode *compiler.Bytecode) *VM {
 // Create a new VM instance from the provided bytecode, along with predefined
 // globals so that state can be maintained between VM instances.
 func NewWithState(bytecode *compiler.Bytecode, globals []object.Object) *VM {
-	mainFn := &object.CompiledLambda{
+	mainLambda := &object.CompiledLambda{
 		Instructions: bytecode.Instructions,
 	}
+	mainClosure := &object.Closure{Lambda: mainLambda}
 
-	mainFrame := NewFrame(mainFn, 0)
+	mainFrame := NewFrame(mainClosure, 0)
 
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
@@ -176,20 +178,20 @@ func (vm *VM) Run() error {
 			argCount := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
-			// Look for the lambda before the arguments that have been pushed
+			// Look for the fn before the arguments that have been pushed
 			// onto the stack above it.
 			// Extra -1 is because vm.sp points to the space after the top of
 			// the stack.
-			switch lambda := vm.stack[vm.sp-argCount-1].(type) {
-			case *object.CompiledLambda:
-				if argCount != lambda.ParameterCount {
+			switch fn := vm.stack[vm.sp-argCount-1].(type) {
+			case *object.Closure:
+				if argCount != fn.Lambda.ParameterCount {
 					return fmt.Errorf(
 						"wrong number of arguments: expected=%d got=%d",
-						lambda.ParameterCount, argCount,
+						fn.Lambda.ParameterCount, argCount,
 					)
 				}
 
-				frame := NewFrame(lambda, vm.sp-argCount)
+				frame := NewFrame(fn, vm.sp-argCount)
 
 				vm.pushFrame(frame)
 				// Reserve space on the stack for local bindings:
@@ -199,10 +201,10 @@ func (vm *VM) Run() error {
 				// paramaters and local bindings, since parameters are a special
 				// case of local bindings. This allows the stack beyond this point
 				// to be used as normal in instruction execution.
-				vm.sp = frame.basePointer + lambda.LocalsCount
+				vm.sp = frame.basePointer + fn.Lambda.LocalsCount
 			case *object.FunctionObject:
 				args := vm.stack[vm.sp-argCount : vm.sp]
-				result := lambda.Fn(args...)
+				result := fn.Fn(args...)
 
 				vm.sp = vm.sp - argCount - 1
 
@@ -227,6 +229,23 @@ func (vm *VM) Run() error {
 			}
 		case code.OpEmptyList:
 			err := vm.push(&object.List{})
+
+			if err != nil {
+				return err
+			}
+		case code.OpClosure:
+			index := code.ReadUint16(ins[ip+1:])
+			_ = ins[ip+3]
+			vm.currentFrame().ip += 3
+
+			constant := vm.constants[index]
+			lambda, ok := constant.(*object.CompiledLambda)
+
+			if !ok {
+				return fmt.Errorf("object not lambda: %+v", constant)
+			}
+
+			err := vm.push(&object.Closure{Lambda: lambda})
 
 			if err != nil {
 				return err

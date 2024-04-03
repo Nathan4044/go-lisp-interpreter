@@ -22,7 +22,8 @@ const (
 	LAMBDA_OBJ            = "LAMBDA"
 	NULL_OBJ              = "NULL"
 	ERROR_OBJ             = "ERROR"
-	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION_OBJ"
+	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION"
+	CLOSURE_OBJ           = "CLOSURE"
 )
 
 // The Function type is the definition of a builtin function.
@@ -294,4 +295,17 @@ func (cl *CompiledLambda) Type() ObjectType {
 // pointer as a means to distinguish between inspected lambdas.
 func (cl *CompiledLambda) Inspect() string {
 	return fmt.Sprintf("CompiledLambda[%p]", cl)
+}
+
+type Closure struct {
+	Lambda *CompiledLambda
+	Free   []Object
+}
+
+func (cl *Closure) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+
+func (cl *Closure) Inspect() string {
+	return fmt.Sprintf("Closure[%p]", cl)
 }
