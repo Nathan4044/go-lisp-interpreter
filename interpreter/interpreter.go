@@ -25,7 +25,7 @@ func Run(source string, env *object.Environment) (object.Object, []string) {
 
 // Compile the expressions in the provided program into bytecode, then
 // execute the bytecode on a VM.
-func RunCompiled(source string, constants []object.Object, symTable *compiler.SymbolTable, globals []object.Object) (object.Object, []string) {
+func RunCompiled(source string, constants *[]object.Object, symTable *compiler.SymbolTable, globals []object.Object) (object.Object, []string) {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParseProgram()
@@ -34,12 +34,15 @@ func RunCompiled(source string, constants []object.Object, symTable *compiler.Sy
 		return nil, p.Errors
 	}
 
-	c := compiler.NewWithState(constants, symTable)
+	c := compiler.NewWithState(*constants, symTable)
 	err := c.Compile(program)
 
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
+
+	// ensure constants persist between runs
+	*constants = c.Bytecode().Constants
 
 	v := vm.NewWithState(c.Bytecode(), globals)
 

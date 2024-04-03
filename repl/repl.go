@@ -39,7 +39,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		//result, errors := interpreter.Run(scanner.Text(), env)
-		result, errors := interpreter.RunCompiled(scanner.Text(), constants, symbolTable, globals)
+		result, errors := interpreter.RunCompiled(scanner.Text(), &constants, symbolTable, globals)
 
 		if len(errors) > 0 {
 			for _, err := range errors {
