@@ -353,3 +353,19 @@ func TestBuiltinFunctions(t *testing.T) {
 
 	runVmTests(t, tests)
 }
+
+func TestClosures(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+            (def newClosure (lambda (a)
+                              (lambda (n) (+ n a))))
+            (def closure (newClosure 5))
+            (closure 5)
+            `,
+			expected: 10,
+		},
+	}
+
+	runVmTests(t, tests)
+}

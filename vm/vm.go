@@ -235,7 +235,7 @@ func (vm *VM) Run() error {
 			}
 		case code.OpClosure:
 			index := code.ReadUint16(ins[ip+1:])
-			_ = ins[ip+3]
+			freeCount := int(ins[ip+3])
 			vm.currentFrame().ip += 3
 
 			constant := vm.constants[index]
@@ -245,7 +245,22 @@ func (vm *VM) Run() error {
 				return fmt.Errorf("object not lambda: %+v", constant)
 			}
 
-			err := vm.push(&object.Closure{Lambda: lambda})
+			freeVariables := make([]object.Object, freeCount)
+
+			for i := 0; i < freeCount; i++ {
+				freeVariables[i] = vm.stack[vm.sp-freeCount+i]
+			}
+
+			err := vm.push(&object.Closure{Lambda: lambda, Free: freeVariables})
+
+			if err != nil {
+				return err
+			}
+		case code.OpGetFree:
+			index := int(ins[ip+1])
+			vm.currentFrame().ip += 1
+
+			err := vm.push(vm.currentFrame().Closure.Free[index])
 
 			if err != nil {
 				return err
