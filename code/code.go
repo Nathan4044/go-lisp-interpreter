@@ -34,6 +34,7 @@ const (
 	OpEmptyList
 	OpGetBuiltin
 	OpClosure
+	OpGetFree
 )
 
 var definitions = map[Opcode]*Definition{
@@ -53,6 +54,7 @@ var definitions = map[Opcode]*Definition{
 	OpEmptyList:     {"OpEmptyList", []int{}},
 	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 	OpClosure:       {"OpClosure", []int{2, 1}},
+	OpGetFree:       {"OpGetFree", []int{1}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the

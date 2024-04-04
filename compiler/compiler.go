@@ -183,6 +183,7 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 
 				c.emit(code.OpReturn)
 
+				freeSymbols := c.symbolTable.FreeSymbols
 				localsCount := c.symbolTable.count
 				ins := c.leaveScope()
 
@@ -192,7 +193,11 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 					ParameterCount: len(params),
 				}
 
-				c.emit(code.OpClosure, c.addConstant(compiledLambda), 0)
+				for _, sym := range freeSymbols {
+					c.getSymbol(sym)
+				}
+
+				c.emit(code.OpClosure, c.addConstant(compiledLambda), len(freeSymbols))
 			default:
 				err := c.Compile(expr.Fn)
 
@@ -234,13 +239,7 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				return fmt.Errorf("undefined variable %s", expr.Token.Literal)
 			}
 
-			if sym.Scope == GlobalScope {
-				c.emit(code.OpGetGlobal, sym.Index)
-			} else if sym.Scope == BuiltinScope {
-				c.emit(code.OpGetBuiltin, sym.Index)
-			} else {
-				c.emit(code.OpGetLocal, sym.Index)
-			}
+			c.getSymbol(sym)
 		}
 	}
 
@@ -400,4 +399,17 @@ func (c *Compiler) leaveScope() code.Instructions {
 	c.symbolTable = c.symbolTable.outer
 
 	return ins
+}
+
+func (c *Compiler) getSymbol(sym Symbol) {
+	switch sym.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, sym.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, sym.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, sym.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, sym.Index)
+	}
 }

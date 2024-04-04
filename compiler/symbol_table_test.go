@@ -142,3 +142,87 @@ func TestDefineAndResolveBuiltins(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveFree(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+	firstLocal.Define("d")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	tests := []struct {
+		table              *SymbolTable
+		expectedSymbols    []Symbol
+		expectedFree       []Symbol
+		expectedUnresolved []string
+	}{
+		{
+			firstLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{},
+			[]string{"g"},
+		},
+		{
+			secondLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "c", Scope: FreeScope, Index: 0},
+				{Name: "d", Scope: FreeScope, Index: 1},
+				{Name: "e", Scope: LocalScope, Index: 0},
+				{Name: "f", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
+			},
+			[]string{"g"},
+		},
+	}
+
+	for _, tt := range tests {
+		for _, expected := range tt.expectedSymbols {
+			sym, ok := tt.table.Resolve(expected.Name)
+
+			if !ok {
+				t.Errorf("could not resolve symbol %s", expected.Name)
+			}
+
+			if sym != expected {
+				t.Errorf("symbol resolved incorrectly: want=%+v got=%+v",
+					expected, sym)
+			}
+		}
+
+		if len(tt.table.FreeSymbols) != len(tt.expectedFree) {
+			t.Errorf("wrong number of free symbols")
+			continue
+		}
+
+		for i, expected := range tt.expectedFree {
+			if tt.table.FreeSymbols[i] != expected {
+				t.Errorf("incorrect free symbol: want=%+v got=%+v",
+					expected, tt.table.FreeSymbols[i])
+			}
+		}
+
+		for _, name := range tt.expectedUnresolved {
+			_, ok := tt.table.Resolve(name)
+
+			if ok {
+				t.Errorf("resolved unresolvable symbol %s", name)
+			}
+		}
+	}
+}
