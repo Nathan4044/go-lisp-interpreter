@@ -557,6 +557,74 @@ func TestClosures(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestRecursiveClosures(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+            (def countdown (lambda (n) (countdown (- n 1))))
+            `,
+			expectedConstants: []interface{}{
+				1,
+				[]code.Instructions{
+					code.Make(code.OpCurrentClosure),
+					code.Make(code.OpGetBuiltin, 2),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (def wrapper (lambda ()
+                (def countdown (lambda (n)
+                    (countdown (- n 1))))
+                (countdown 10)))
+            (wrapper)
+            `,
+			expectedConstants: []interface{}{
+				1,
+				[]code.Instructions{
+					code.Make(code.OpCurrentClosure),
+					code.Make(code.OpGetBuiltin, 2),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturn),
+				},
+				10,
+				[]code.Instructions{
+					code.Make(code.OpClosure, 1, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 2),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 3, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpCall, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 

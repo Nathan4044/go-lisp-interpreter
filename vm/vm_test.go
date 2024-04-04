@@ -365,6 +365,42 @@ func TestClosures(t *testing.T) {
             `,
 			expected: 10,
 		},
+		{
+			input: `
+            (def countdown (lambda (n)
+                             (if (= n 0)
+                               0
+                               (countdown (- n 1)))))
+            (countdown 2)
+            `,
+			expected: 0,
+		},
+		{
+			input: `
+            (def countdown (lambda (n)
+                             (if (= n 0)
+                               0
+                               (countdown (- n 1)))))
+
+            (def wrapper (lambda ()
+                           (countdown 10)))
+
+            (wrapper)
+            `,
+			expected: 0,
+		},
+		{
+			input: `
+            (def wrapper (lambda ()
+                (def countdown (lambda (n)
+                    (if (= n 0)
+                        0
+                        (countdown (- n 1)))))
+                (countdown 100)))
+            (wrapper)
+            `,
+			expected: 0,
+		},
 	}
 
 	runVmTests(t, tests)

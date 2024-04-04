@@ -226,3 +226,48 @@ func TestResolveFree(t *testing.T) {
 		}
 	}
 }
+
+func TestDefineAndResolveFunctionName(t *testing.T) {
+	global := NewSymbolTable()
+	global.DefineFunctionName("func")
+
+	expectedSymbol := Symbol{
+		Name:  "func",
+		Scope: FunctionScope,
+		Index: 0,
+	}
+
+	sym, ok := global.Resolve(expectedSymbol.Name)
+
+	if !ok {
+		t.Errorf("could not resolve function name")
+	}
+
+	if sym != expectedSymbol {
+		t.Errorf("symbol resolved incorrectly: want=%+v got=%+v",
+			expectedSymbol, sym)
+	}
+}
+
+func TestShadowFunctionName(t *testing.T) {
+	global := NewSymbolTable()
+	global.DefineFunctionName("func")
+	global.Define("func")
+
+	expectedSymbol := Symbol{
+		Name:  "func",
+		Scope: GlobalScope,
+		Index: 0,
+	}
+
+	sym, ok := global.Resolve(expectedSymbol.Name)
+
+	if !ok {
+		t.Errorf("could not resolve function name")
+	}
+
+	if sym != expectedSymbol {
+		t.Errorf("symbol resolved incorrectly: want=%+v got=%+v",
+			expectedSymbol, sym)
+	}
+}

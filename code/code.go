@@ -35,26 +35,28 @@ const (
 	OpGetBuiltin
 	OpClosure
 	OpGetFree
+	OpCurrentClosure
 )
 
 var definitions = map[Opcode]*Definition{
-	OpConstant:      {"OpConstant", []int{2}},
-	OpPop:           {"OpPop", []int{}},
-	OpTrue:          {"OpTrue", []int{}},
-	OpFalse:         {"OpFalse", []int{}},
-	OpJumpWhenFalse: {"OpJumpWhenFalse", []int{2}},
-	OpJump:          {"OpJump", []int{2}},
-	OpNull:          {"OpNull", []int{}},
-	OpGetGlobal:     {"OpGetGlobal", []int{2}},
-	OpSetGlobal:     {"OpSetGlobal", []int{2}},
-	OpCall:          {"OpCall", []int{1}},
-	OpReturn:        {"OpReturn", []int{}},
-	OpGetLocal:      {"OpGetLocal", []int{1}},
-	OpSetLocal:      {"OpSetLocal", []int{1}},
-	OpEmptyList:     {"OpEmptyList", []int{}},
-	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
-	OpClosure:       {"OpClosure", []int{2, 1}},
-	OpGetFree:       {"OpGetFree", []int{1}},
+	OpConstant:       {"OpConstant", []int{2}},
+	OpPop:            {"OpPop", []int{}},
+	OpTrue:           {"OpTrue", []int{}},
+	OpFalse:          {"OpFalse", []int{}},
+	OpJumpWhenFalse:  {"OpJumpWhenFalse", []int{2}},
+	OpJump:           {"OpJump", []int{2}},
+	OpNull:           {"OpNull", []int{}},
+	OpGetGlobal:      {"OpGetGlobal", []int{2}},
+	OpSetGlobal:      {"OpSetGlobal", []int{2}},
+	OpCall:           {"OpCall", []int{1}},
+	OpReturn:         {"OpReturn", []int{}},
+	OpGetLocal:       {"OpGetLocal", []int{1}},
+	OpSetLocal:       {"OpSetLocal", []int{1}},
+	OpEmptyList:      {"OpEmptyList", []int{}},
+	OpGetBuiltin:     {"OpGetBuiltin", []int{1}},
+	OpClosure:        {"OpClosure", []int{2, 1}},
+	OpGetFree:        {"OpGetFree", []int{1}},
+	OpCurrentClosure: {"OpCurrentClosure", []int{}},
 }
 
 // Make builds an instruction from the provided Opcode and operands, using the

@@ -4,10 +4,11 @@ package compiler
 type SymbolScope string
 
 const (
-	GlobalScope  SymbolScope = "GLOBAL"
-	LocalScope   SymbolScope = "LOCAL"
-	BuiltinScope SymbolScope = "BUILTIN"
-	FreeScope    SymbolScope = "FREE"
+	GlobalScope   SymbolScope = "GLOBAL"
+	LocalScope    SymbolScope = "LOCAL"
+	BuiltinScope  SymbolScope = "BUILTIN"
+	FreeScope     SymbolScope = "FREE"
+	FunctionScope SymbolScope = "FUNCTION"
 )
 
 // Symbol is an instance of a defined identifier.
@@ -43,13 +44,7 @@ func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 
 // Define a symbol within the SymbolTable associated with the given identifier.
 func (st *SymbolTable) Define(s string) Symbol {
-	sym, ok := st.store[s]
-
-	if ok {
-		return sym
-	}
-
-	sym = Symbol{
+	sym := Symbol{
 		Name:  s,
 		Index: st.count,
 	}
@@ -107,4 +102,16 @@ func (st *SymbolTable) defineFree(original Symbol) Symbol {
 	st.store[original.Name] = free
 
 	return free
+}
+
+func (st *SymbolTable) DefineFunctionName(name string) Symbol {
+	symbol := Symbol{
+		Name:  name,
+		Scope: FunctionScope,
+		Index: 0,
+	}
+
+	st.store[name] = symbol
+
+	return symbol
 }

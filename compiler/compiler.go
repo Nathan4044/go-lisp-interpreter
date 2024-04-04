@@ -111,12 +111,6 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 					return fmt.Errorf("incorrect number of values in def expression")
 				}
 
-				err := c.Compile(expr.Args[1])
-
-				if err != nil {
-					return err
-				}
-
 				name, ok := expr.Args[0].(*ast.Identifier)
 
 				if !ok {
@@ -124,6 +118,16 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				}
 
 				symbol := c.symbolTable.Define(name.Token.Literal)
+
+				if sExpr, ok := expr.Args[1].(*ast.SExpression); ok {
+					sExpr.Name = name.Token.Literal
+				}
+
+				err := c.Compile(expr.Args[1])
+
+				if err != nil {
+					return err
+				}
 
 				if c.symbolTable.outer == nil {
 					c.emit(code.OpSetGlobal, symbol.Index)
@@ -136,6 +140,10 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				}
 
 				c.enterScope()
+
+				if expr.Name != "" {
+					c.symbolTable.DefineFunctionName(expr.Name)
+				}
 
 				paramList, ok := expr.Args[0].(*ast.SExpression)
 
@@ -411,5 +419,7 @@ func (c *Compiler) getSymbol(sym Symbol) {
 		c.emit(code.OpGetBuiltin, sym.Index)
 	case FreeScope:
 		c.emit(code.OpGetFree, sym.Index)
+	case FunctionScope:
+		c.emit(code.OpCurrentClosure)
 	}
 }

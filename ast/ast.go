@@ -91,6 +91,7 @@ func (sl *StringLiteral) expression() {}
 type SExpression struct {
 	Fn   Expression
 	Args []Expression
+	Name string
 }
 
 // Recursively print the values in the SExpression.
