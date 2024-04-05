@@ -301,6 +301,26 @@ func TestClosures(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Celebtration test case showing that the compiler works well.
+func TestRecursiveFibonacci(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+            (def fibonacci (lambda (n)
+                (if (or (= n 0)
+                        (= n 1))
+                    n
+                    (+ (fibonacci (- n 1))
+                       (fibonacci (- n 2))))))
+            (fibonacci 15)
+            `,
+			expected: 610,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 // Helper function to create an AST from source code.
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
