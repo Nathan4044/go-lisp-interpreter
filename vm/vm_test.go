@@ -10,137 +10,22 @@ import (
 	"testing"
 )
 
-func parse(input string) *ast.Program {
-	l := lexer.New(input)
-	p := parser.New(l)
-
-	return p.ParseProgram()
-}
-
-func testIntegerObject(expected int64, actual object.Object) error {
-	result, ok := actual.(*object.Integer)
-
-	if !ok {
-		return fmt.Errorf("object is not integer: got=%T(%+v)", actual, actual)
-	}
-
-	if result.Value != expected {
-		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
-	}
-
-	return nil
-}
-
-func testBooleanObject(expected bool, actual object.Object) error {
-	result, ok := actual.(*object.BooleanObject)
-
-	if !ok {
-		return fmt.Errorf("object is not boolean: got=%T(%+v)", actual, actual)
-	}
-
-	if result.Value != expected {
-		return fmt.Errorf("object has wrong value: got=%t want=%t", result.Value, expected)
-	}
-
-	return nil
-}
-
-func testStringObject(expected string, actual object.Object) error {
-	result, ok := actual.(*object.String)
-
-	if !ok {
-		return fmt.Errorf("object is not string: got=%T(%+v)", actual, actual)
-	}
-
-	if result.Value != expected {
-		return fmt.Errorf("object has wrong value: got=%s want=%s", result.Value, expected)
-	}
-
-	return nil
-}
-
-type vmTestCase struct {
-	input    string
-	expected interface{}
-}
-
-func runVmTests(t *testing.T, tests []vmTestCase) {
-	t.Helper()
-
-	for _, tt := range tests {
-		program := parse(tt.input)
-		comp := compiler.New()
-
-		err := comp.Compile(program)
-
-		if err != nil {
-			t.Fatalf("compiler error: %s", err)
-		}
-
-		vm := New(comp.Bytecode())
-		err = vm.Run()
-
-		if err != nil {
-			t.Fatalf("vm error: %s", err)
-		}
-
-		stackElem := vm.LastPoppedStackElem()
-
-		testExpectedObject(t, tt.expected, stackElem)
-	}
-}
-
-func testExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
-	t.Helper()
-
-	switch expected := expected.(type) {
-	case int:
-		err := testIntegerObject(int64(expected), actual)
-
-		if err != nil {
-			t.Errorf("testIntegerObject failed: %s", err)
-		}
-	case bool:
-		err := testBooleanObject(expected, actual)
-
-		if err != nil {
-			t.Errorf("testBooleanObject failed: %s", err)
-		}
-	case string:
-		err := testStringObject(expected, actual)
-
-		if err != nil {
-			t.Errorf("testStringObject failed: %s", err)
-		}
-	case *object.ErrorObject:
-		errObj, ok := actual.(*object.ErrorObject)
-
-		if !ok {
-			t.Errorf("object is not error: %T(%+v)", actual, actual)
-		}
-
-		if errObj.Error != expected.Error {
-			t.Errorf("incorrect error message: want=%q got=%q",
-				expected.Error, errObj.Error)
-		}
-	case *object.Null:
-		if actual != Null {
-			t.Errorf("object is not null: %T(%+v)", actual, actual)
-		}
-	}
-}
-
+// Ensure arithmetic functions as expected.
 func TestIntegerArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
 		{"2", 2},
-		{"1 2", 2}, // deleteme
-		// {"(+ 1 2)", 2}, // fixme
+		{"(+ 1 2)", 3},
+		{"(+ 1 2 3 4)", 10},
+		{"(* 1 2 3 4)", 24},
+		{"(- 123 23 1)", 99},
+		{"(/ 8 2 2)", 2},
 	}
 
 	runVmTests(t, tests)
 }
 
+// Test boolean literals return correct result.
 func TestBooleanExpressions(t *testing.T) {
 	tests := []vmTestCase{
 		{"true", true},
@@ -150,6 +35,7 @@ func TestBooleanExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Test if expressions execute correctly.
 func TestConditionals(t *testing.T) {
 	tests := []vmTestCase{
 		{"(if true 10)", 10},
@@ -159,16 +45,16 @@ func TestConditionals(t *testing.T) {
 		{"(if 1 10)", 10},
 		{"(if 1 10 20)", 10},
 		{"(if (if false 10) 10 20)", 20},
-		// todo: uncomment when functions are implemented
-		// {"(if (< 1 2) 10)", 10},
-		// {"(if (< 1 2) 10 20)", 10},
-		// {"(if (> 1 2) 10 20)", 20},
-		// {"(not (if false 10))", true},
+		{"(if (< 1 2) 10)", 10},
+		{"(if (< 1 2) 10 20)", 10},
+		{"(if (> 1 2) 10 20)", 20},
+		{"(not (if false 10))", true},
 	}
 
 	runVmTests(t, tests)
 }
 
+// Test globals are created and resolved correctly.
 func TestGlobalDefExpressions(t *testing.T) {
 	tests := []vmTestCase{
 		{"(def one 1) one", 1},
@@ -179,6 +65,7 @@ func TestGlobalDefExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Test string literals can be executed.
 func TestStringExpressions(t *testing.T) {
 	tests := []vmTestCase{
 		{"\"string\"", "string"},
@@ -188,6 +75,7 @@ func TestStringExpressions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Test lambdas work correctly.
 func TestLambdaCalls(t *testing.T) {
 	tests := []vmTestCase{
 		{
@@ -286,6 +174,8 @@ func TestLambdaCalls(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Ensure the correct error displays when the wrong number of arguments are
+// provided.
 func TestLambdasWithWrongArgCount(t *testing.T) {
 	tests := []vmTestCase{
 		{
@@ -334,6 +224,7 @@ func TestLambdasWithWrongArgCount(t *testing.T) {
 	}
 }
 
+// Ensure builtin function can be executed.
 func TestBuiltinFunctions(t *testing.T) {
 	tests := []vmTestCase{
 		{"(+ 1 2)", 3},
@@ -354,6 +245,8 @@ func TestBuiltinFunctions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+// Test that closures work correctly, including recursive closures and closures
+// defined inside other closures.
 func TestClosures(t *testing.T) {
 	tests := []vmTestCase{
 		{
@@ -404,4 +297,132 @@ func TestClosures(t *testing.T) {
 	}
 
 	runVmTests(t, tests)
+}
+
+// Helper function to create an AST from source code.
+func parse(input string) *ast.Program {
+	l := lexer.New(input)
+	p := parser.New(l)
+
+	return p.ParseProgram()
+}
+
+// Check that an Object is an IntegerObject and that its value is correct.
+func testIntegerObject(expected int64, actual object.Object) error {
+	result, ok := actual.(*object.Integer)
+
+	if !ok {
+		return fmt.Errorf("object is not integer: got=%T(%+v)", actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
+	}
+
+	return nil
+}
+
+// Check an Object is a boolean and that its value is correct.
+func testBooleanObject(expected bool, actual object.Object) error {
+	result, ok := actual.(*object.BooleanObject)
+
+	if !ok {
+		return fmt.Errorf("object is not boolean: got=%T(%+v)", actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value: got=%t want=%t", result.Value, expected)
+	}
+
+	return nil
+}
+
+// Check an Object is a string and that its value is correct.
+func testStringObject(expected string, actual object.Object) error {
+	result, ok := actual.(*object.String)
+
+	if !ok {
+		return fmt.Errorf("object is not string: got=%T(%+v)", actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value: got=%s want=%s", result.Value, expected)
+	}
+
+	return nil
+}
+
+// A struct containing the values required for a VM test case.
+type vmTestCase struct {
+	input    string      // Source code.
+	expected interface{} // Expected resulting value.
+}
+
+// Execute vm tests using the given test cases, ensuring that the Object
+// resulting from execution has the correct value.
+func runVmTests(t *testing.T, tests []vmTestCase) {
+	t.Helper()
+
+	for _, tt := range tests {
+		program := parse(tt.input)
+		comp := compiler.New()
+
+		err := comp.Compile(program)
+
+		if err != nil {
+			t.Fatalf("compiler error: %s", err)
+		}
+
+		vm := New(comp.Bytecode())
+		err = vm.Run()
+
+		if err != nil {
+			t.Fatalf("vm error: %s", err)
+		}
+
+		stackElem := vm.LastPoppedStackElem()
+
+		testExpectedObject(t, tt.expected, stackElem)
+	}
+}
+
+// Test that an Object is of the correct type and contains the expected value.
+func testExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
+	t.Helper()
+
+	switch expected := expected.(type) {
+	case int:
+		err := testIntegerObject(int64(expected), actual)
+
+		if err != nil {
+			t.Errorf("testIntegerObject failed: %s", err)
+		}
+	case bool:
+		err := testBooleanObject(expected, actual)
+
+		if err != nil {
+			t.Errorf("testBooleanObject failed: %s", err)
+		}
+	case string:
+		err := testStringObject(expected, actual)
+
+		if err != nil {
+			t.Errorf("testStringObject failed: %s", err)
+		}
+	case *object.ErrorObject:
+		errObj, ok := actual.(*object.ErrorObject)
+
+		if !ok {
+			t.Errorf("object is not error: %T(%+v)", actual, actual)
+		}
+
+		if errObj.Error != expected.Error {
+			t.Errorf("incorrect error message: want=%q got=%q",
+				expected.Error, errObj.Error)
+		}
+	case *object.Null:
+		if actual != Null {
+			t.Errorf("object is not null: %T(%+v)", actual, actual)
+		}
+	}
 }

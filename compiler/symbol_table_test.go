@@ -2,6 +2,8 @@ package compiler
 
 import "testing"
 
+// Test that Symbols are defined in the correct SymbolTables with the correct
+// scope and index.
 func TestDefine(t *testing.T) {
 	expected := map[string]Symbol{
 		"a": {Name: "a", Scope: GlobalScope, Index: 0},
@@ -55,6 +57,7 @@ func TestDefine(t *testing.T) {
 	}
 }
 
+// Ensure that global symbols can be resolved at any depth.
 func TestResolveGlobal(t *testing.T) {
 	global := NewSymbolTable()
 	global.Define("a")
@@ -109,6 +112,7 @@ func TestResolveGlobal(t *testing.T) {
 	}
 }
 
+// Test that builtin Symbols are defined and resolved correctly.
 func TestDefineAndResolveBuiltins(t *testing.T) {
 	global := NewSymbolTable()
 	firstLocal := NewEnclosedSymbolTable(global)
@@ -143,6 +147,8 @@ func TestDefineAndResolveBuiltins(t *testing.T) {
 	}
 }
 
+// Ensure that free Symbols are correctly captured and resolved from the
+// SymbolTable's enclosing scope.
 func TestResolveFree(t *testing.T) {
 	global := NewSymbolTable()
 	global.Define("a")
@@ -227,6 +233,7 @@ func TestResolveFree(t *testing.T) {
 	}
 }
 
+// Ensure that Symbols with the FunctionScope resolve correctly.
 func TestDefineAndResolveFunctionName(t *testing.T) {
 	global := NewSymbolTable()
 	global.DefineFunctionName("func")
@@ -249,6 +256,9 @@ func TestDefineAndResolveFunctionName(t *testing.T) {
 	}
 }
 
+// Ensure that the function name can be shadowed within a scope, and that the
+// resolved symbol won't reference the function associated with the current
+// scope.
 func TestShadowFunctionName(t *testing.T) {
 	global := NewSymbolTable()
 	global.DefineFunctionName("func")

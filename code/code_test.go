@@ -5,6 +5,9 @@ import (
 	"testing"
 )
 
+// Test that Make functions correctly for instructions that have operands of
+// varying amounts and sizes, and that the bytes of multi-byte operands are
+// encoded in big endian order.
 func TestMake(t *testing.T) {
 	tests := []struct {
 		op       Opcode
@@ -32,6 +35,7 @@ func TestMake(t *testing.T) {
 	}
 }
 
+// Test that instructions are correctly converted into a string representation.
 func TestInstructionsString(t *testing.T) {
 	instructions := []Instructions{
 		Make(OpPop),
@@ -55,6 +59,8 @@ func TestInstructionsString(t *testing.T) {
 	}
 }
 
+// Test that the correct number of bytes are read for the operands of
+// instructions with varying sizes and amounts of operands.
 func TestReadOperands(t *testing.T) {
 	tests := []struct {
 		op        Opcode

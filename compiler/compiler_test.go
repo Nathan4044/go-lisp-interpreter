@@ -11,13 +11,18 @@ import (
 	"testing"
 )
 
+// A struct for holding the values involved in a compiler test.
 type compilerTestCase struct {
-	input                string
-	expectedConstants    []interface{}
+	// The source code that will be compiled.
+	input string
+	// The constant values that should be extracted from the source code.
+	expectedConstants []interface{}
+	// The instructions that should be built.
 	expectedInstructions []code.Instructions
 }
 
-func TestIntegerArithmetic(t *testing.T) {
+// Ensure integer literals are comiled correctly.
+func TestIntegerLiterals(t *testing.T) {
 	tests := []compilerTestCase{
 		{
 			input:             "1 2",
@@ -46,6 +51,7 @@ func TestIntegerArithmetic(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure that boolean literals are resolved to their unique Opcodes.
 func TestBooleanExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -69,7 +75,9 @@ func TestBooleanExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure if expressions compile as expected.
 func TestConditionals(t *testing.T) {
+	// Bytecode position numbers provided for debugging clarity.
 	tests := []compilerTestCase{
 		{
 			input:             "(if true 4) 5",
@@ -120,6 +128,7 @@ func TestConditionals(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Test that variables defined in the global scope are compiled correctly.
 func TestGlobalDefExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -160,6 +169,8 @@ func TestGlobalDefExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure variables defined locally are compiled as such, and that global
+// variables referenced locally aren't defined as being local.
 func TestLocalDefExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -234,6 +245,7 @@ func TestLocalDefExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Test that strings are compiled correctly to constants.
 func TestStringExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -249,7 +261,8 @@ func TestStringExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
-func TestFunctions(t *testing.T) {
+// Test that lambdas are correctly compiled to Closure objects.
+func TestLambdaExpressions(t *testing.T) {
 	tests := []compilerTestCase{
 		{
 			input: "(lambda () 5)",
@@ -300,6 +313,7 @@ func TestFunctions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Test that lambdas compiled to Closures will be called correctly.
 func TestLambdaCalls(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -390,6 +404,7 @@ func TestLambdaCalls(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Test that references to builtin functions are compiled correctly.
 func TestBuiltinReferences(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -438,6 +453,7 @@ func TestBuiltinReferences(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure actual closures compile as expected.
 func TestClosures(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -557,6 +573,7 @@ func TestClosures(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure that recursive references to closures are compiled correctly.
 func TestRecursiveClosures(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -625,6 +642,7 @@ func TestRecursiveClosures(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+// Ensure that scopes are entered and exited correctly during compilation.
 func TestCompilerScopes(t *testing.T) {
 	compiler := New()
 
@@ -704,6 +722,10 @@ func TestCompilerScopes(t *testing.T) {
 	}
 }
 
+// Run a compiler test case by:
+//  1. Compiling the provided source code, ensuring no errors.
+//  2. Testing that the compiled instructions match the expected instructions.
+//  3. Testing that the compiled constants match the expected constants.
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
@@ -733,6 +755,7 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	}
 }
 
+// Helper function for getting a parsed program for testing.
 func parse(input string) *ast.Program {
 	l := lexer.New(input)
 	p := parser.New(l)
@@ -740,6 +763,7 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
+// Test that the compiled instructions match the expected ones.
 func testInstructions(
 	expected []code.Instructions,
 	actual code.Instructions,
@@ -766,6 +790,7 @@ func testInstructions(
 	return nil
 }
 
+// Test that the compiled constants match the expected ones.
 func testConstants(
 	expected []interface{},
 	actual []object.Object,
@@ -791,6 +816,7 @@ func testConstants(
 			if err != nil {
 				return fmt.Errorf("constant %d - testStringObject failed: %s", i, err)
 			}
+			// Test that the constant CompiledLambda matches the expected instructions.
 		case []code.Instructions:
 			lambda, ok := actual[i].(*object.CompiledLambda)
 

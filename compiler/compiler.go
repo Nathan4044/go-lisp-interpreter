@@ -1,5 +1,5 @@
 // The compiler package contains the definition of the Compiler type, which
-// compiles an AST node into Bytecode
+// compiles an AST node into Bytecode.
 package compiler
 
 import (
@@ -50,6 +50,7 @@ func New() *Compiler {
 
 	symbolTable := NewSymbolTable()
 
+	// Define builtin functions for the global scope.
 	for i, v := range object.Builtins {
 		symbolTable.DefineBuiltin(i, v.Name)
 	}
@@ -91,137 +92,29 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				return err
 			}
 
-			// pop the top element of the stack after each top-level expression
+			// Pop the top element of the stack after each top-level expression.
 			c.emit(code.OpPop)
 		}
 	case *ast.SExpression:
+		// Conditionally compile an SExpression based on the first element.
 		if expr.Fn == nil {
 			c.emit(code.OpEmptyList)
 		} else {
+			var err error
 
 			switch expr.Fn.String() {
 			case "if":
-				err := c.compileIfExpression(expr)
-
-				if err != nil {
-					return err
-				}
+				err = c.compileIfExpression(expr)
 			case "def":
-				if len(expr.Args) != 2 {
-					return fmt.Errorf("incorrect number of values in def expression")
-				}
-
-				name, ok := expr.Args[0].(*ast.Identifier)
-
-				if !ok {
-					return fmt.Errorf("first argument to def must be identifier")
-				}
-
-				symbol := c.symbolTable.Define(name.Token.Literal)
-
-				if sExpr, ok := expr.Args[1].(*ast.SExpression); ok {
-					sExpr.Name = name.Token.Literal
-				}
-
-				err := c.Compile(expr.Args[1])
-
-				if err != nil {
-					return err
-				}
-
-				if c.symbolTable.outer == nil {
-					c.emit(code.OpSetGlobal, symbol.Index)
-				} else {
-					c.emit(code.OpSetLocal, symbol.Index)
-				}
+				err = c.compileDefExpression(expr)
 			case "lambda":
-				if len(expr.Args) < 1 {
-					return fmt.Errorf("not enough arguments for lambda definition")
-				}
-
-				c.enterScope()
-
-				if expr.Name != "" {
-					c.symbolTable.DefineFunctionName(expr.Name)
-				}
-
-				paramList, ok := expr.Args[0].(*ast.SExpression)
-
-				if !ok {
-					return fmt.Errorf("provided args must be a list")
-				}
-
-				params := []ast.Expression{}
-
-				if paramList.Fn != nil {
-					params = append([]ast.Expression{paramList.Fn}, paramList.Args...)
-				}
-
-				for _, p := range params {
-					param, ok := p.(*ast.Identifier)
-
-					if !ok {
-						return fmt.Errorf("function parameters must be identifiers, got=%T(%+v)", p, params)
-					}
-
-					c.symbolTable.Define(param.String())
-				}
-
-				expressions := expr.Args[1:]
-
-				if len(expressions) == 0 {
-					c.emit(code.OpNull)
-				} else {
-					for _, arg := range expressions[:len(expressions)-1] {
-						err := c.Compile(arg)
-
-						if err != nil {
-							return err
-						}
-
-						c.emit(code.OpPop)
-					}
-
-					err := c.Compile(expr.Args[len(expr.Args)-1])
-
-					if err != nil {
-						return err
-					}
-				}
-
-				c.emit(code.OpReturn)
-
-				freeSymbols := c.symbolTable.FreeSymbols
-				localsCount := c.symbolTable.count
-				ins := c.leaveScope()
-
-				compiledLambda := &object.CompiledLambda{
-					Instructions:   ins,
-					LocalsCount:    localsCount,
-					ParameterCount: len(params),
-				}
-
-				for _, sym := range freeSymbols {
-					c.getSymbol(sym)
-				}
-
-				c.emit(code.OpClosure, c.addConstant(compiledLambda), len(freeSymbols))
+				err = c.compileLambdaExpression(expr)
 			default:
-				err := c.Compile(expr.Fn)
+				err = c.compileCallExpression(expr)
+			}
 
-				if err != nil {
-					return err
-				}
-
-				for _, a := range expr.Args {
-					err := c.Compile(a)
-
-					if err != nil {
-						return err
-					}
-				}
-
-				c.emit(code.OpCall, len(expr.Args))
+			if err != nil {
+				return err
 			}
 		}
 	case *ast.IntegerLiteral:
@@ -254,7 +147,7 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 	return nil
 }
 
-// returns the instructions from the currently active scope.
+// Returns the instructions from the currently active scope.
 func (c *Compiler) currentInstructions() code.Instructions {
 	return c.scopes[c.scopeIndex].instructions
 }
@@ -274,7 +167,7 @@ func (c *Compiler) addConstant(obj object.Object) int {
 	return len(c.constants) - 1
 }
 
-// Create a new instruction associated with the OpCode and add it to the
+// Create a new instruction associated with the Opcode and add it to the
 // finished instructions.
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
@@ -343,8 +236,8 @@ func (c *Compiler) compileIfExpression(expr *ast.SExpression) error {
 		return err
 	}
 
-	// emit conditional jump with erroneous destination, to be updated later
-	// in the function to the start of the alternative
+	// Emit conditional jump with erroneous destination, to be updated later
+	// in the function to the start of the alternative.
 	conditionalJumpPos := c.emit(code.OpJumpWhenFalse, 9999)
 
 	consequence := expr.Args[1]
@@ -355,15 +248,18 @@ func (c *Compiler) compileIfExpression(expr *ast.SExpression) error {
 		return err
 	}
 
-	// emit jump with erroneous destination, to be updated later in the function
-	// to the end of the alternative
+	// Emit jump with erroneous destination, to be updated later in the function
+	// to the end of the alternative.
 	jumpPos := c.emit(code.OpJump, 9999)
 
+	// Update the conditional jump instruction's destination to be directly
+	// after the consequence of the if expression.
 	positionAfterConsequence := len(c.currentInstructions())
 	c.changeOperand(conditionalJumpPos, positionAfterConsequence)
 
 	if len(expr.Args) < 3 {
-		// if no alternative is present, add null
+		// Add null as the alternative result of if expressions where no
+		// alternative is provided.
 		c.emit(code.OpNull)
 	} else {
 		alternative := expr.Args[2]
@@ -375,8 +271,150 @@ func (c *Compiler) compileIfExpression(expr *ast.SExpression) error {
 		}
 	}
 
+	// Update the jump instruction's destination to be directly after the
+	// alternative of the if expression.
 	positionAfterAlternative := len(c.currentInstructions())
 	c.changeOperand(jumpPos, positionAfterAlternative)
+
+	return nil
+}
+
+// Compile the provided SExpression as a def expression, defining a variable
+// in the current scope as the result of the internal Expression provided as the
+// second argument.
+func (c *Compiler) compileDefExpression(expr *ast.SExpression) error {
+	if len(expr.Args) != 2 {
+		return fmt.Errorf("incorrect number of values in def expression")
+	}
+
+	name, ok := expr.Args[0].(*ast.Identifier)
+
+	if !ok {
+		return fmt.Errorf("first argument to def must be identifier")
+	}
+
+	symbol := c.symbolTable.Define(name.Token.Literal)
+
+	if sExpr, ok := expr.Args[1].(*ast.SExpression); ok {
+		sExpr.Name = name.Token.Literal
+	}
+
+	err := c.Compile(expr.Args[1])
+
+	if err != nil {
+		return err
+	}
+
+	if c.symbolTable.outer == nil {
+		c.emit(code.OpSetGlobal, symbol.Index)
+	} else {
+		c.emit(code.OpSetLocal, symbol.Index)
+	}
+
+	return nil
+}
+
+// Compile the provided SExpression as a Lambda Expression, resulting in a
+// Closure object (all lambdas are treated as closures).
+func (c *Compiler) compileLambdaExpression(expr *ast.SExpression) error {
+	if len(expr.Args) < 1 {
+		return fmt.Errorf("not enough arguments for lambda definition")
+	}
+
+	c.enterScope()
+
+	if expr.Name != "" {
+		c.symbolTable.DefineFunctionName(expr.Name)
+	}
+
+	paramList, ok := expr.Args[0].(*ast.SExpression)
+
+	if !ok {
+		return fmt.Errorf("provided args must be a list")
+	}
+
+	params := []ast.Expression{}
+
+	if paramList.Fn != nil {
+		params = append([]ast.Expression{paramList.Fn}, paramList.Args...)
+	}
+
+	for _, p := range params {
+		param, ok := p.(*ast.Identifier)
+
+		if !ok {
+			return fmt.Errorf("function parameters must be identifiers, got=%T(%+v)", p, params)
+		}
+
+		c.symbolTable.Define(param.String())
+	}
+
+	expressions := expr.Args[1:]
+
+	if len(expressions) == 0 {
+		// Result in null when lambda contians no expressions.
+		c.emit(code.OpNull)
+		c.emit(code.OpReturn)
+	} else {
+		for _, arg := range expressions {
+			err := c.Compile(arg)
+
+			if err != nil {
+				return err
+			}
+
+			c.emit(code.OpPop)
+		}
+
+		// Change the final pop instruction into a return instruction.
+		c.replaceInstruction(
+			len(c.currentInstructions())-1,
+			[]byte{byte(code.OpReturn)},
+		)
+	}
+
+	// Take free symbols found during compilation before leaving the inner scope
+	// so the values can be added to the produced Closure.
+	freeSymbols := c.symbolTable.FreeSymbols
+	localsCount := c.symbolTable.count
+	ins := c.leaveScope()
+
+	compiledLambda := &object.CompiledLambda{
+		Instructions:   ins,
+		LocalsCount:    localsCount,
+		ParameterCount: len(params),
+	}
+
+	// Put values associated with free symbols on the stack in front of the
+	// Closure.
+	for _, sym := range freeSymbols {
+		c.getSymbol(sym)
+	}
+
+	c.emit(code.OpClosure, c.addConstant(compiledLambda), len(freeSymbols))
+
+	return nil
+}
+
+// Compile the provided SExpression as a call to a function, resulting in a call
+// instruction with an operand representing the number of arguments passed in,
+// which sit on the stack above the function to be called.
+func (c *Compiler) compileCallExpression(expr *ast.SExpression) error {
+	err := c.Compile(expr.Fn)
+
+	if err != nil {
+		return err
+	}
+
+	for _, a := range expr.Args {
+		err := c.Compile(a)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	c.emit(code.OpCall, len(expr.Args))
 
 	return nil
 }
@@ -409,6 +447,8 @@ func (c *Compiler) leaveScope() code.Instructions {
 	return ins
 }
 
+// Emit the correct get Opcode to retrieve the value associated with the
+// provided Symbol.
 func (c *Compiler) getSymbol(sym Symbol) {
 	switch sym.Scope {
 	case GlobalScope:
@@ -420,6 +460,8 @@ func (c *Compiler) getSymbol(sym Symbol) {
 	case FreeScope:
 		c.emit(code.OpGetFree, sym.Index)
 	case FunctionScope:
+		// Emit an instruction specifically for adding the currently executing
+		// Closure on to the stack again, for recursive Closure calls.
 		c.emit(code.OpCurrentClosure)
 	}
 }

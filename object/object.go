@@ -297,6 +297,9 @@ func (cl *CompiledLambda) Inspect() string {
 	return fmt.Sprintf("CompiledLambda[%p]", cl)
 }
 
+// Closure is a wrapper around a CompiledFunction instance that allows it to
+// carry free variables with it, which are variables defined in an enclosing
+// scope. All CompiledLambda objects will be wrapped and treated as Closures.
 type Closure struct {
 	Lambda *CompiledLambda
 	Free   []Object

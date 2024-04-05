@@ -7,6 +7,7 @@ import (
 
 // Frame holds the current VM execution state.
 type Frame struct {
+	// The currently executing Closure.
 	Closure *object.Closure
 	// Instruction pointer for this frame.
 	ip int
@@ -25,6 +26,7 @@ func NewFrame(closure *object.Closure, basePointer int) *Frame {
 	}
 }
 
+// Return the instructions of the Closure associated with the current Frame.
 func (f *Frame) Instructions() code.Instructions {
 	return f.Closure.Lambda.Instructions
 }

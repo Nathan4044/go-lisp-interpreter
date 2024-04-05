@@ -7,27 +7,38 @@ import (
 	"lisp/object"
 )
 
-const StackSize = 2048
-const GlobalSize = 65536
+const (
+	StackSize  = 2048
+	GlobalSize = 65536
+	MaxFrames  = 1024
+)
 
-const MaxFrames = 1024
-
+// Global references to true, false, and null resolve to a single object for
+// for each value.
 var True = object.TRUE
 var False = object.FALSE
 var Null = object.NULL
 
 // VM is used to execute the bytecode it contains.
 type VM struct {
-	constants   []object.Object // slice of constant values that are referenced in the bytecode instructions
-	stack       []object.Object // the active stack used during execution
-	sp          int             // pointer next open space on the stack
-	globals     []object.Object // stack of global objects in the current program
-	frames      []*Frame        // stack of frames for function execution
-	framesIndex int             // pointer to the next open place on the frames stack
+	// Slice of constant values that are referenced in the bytecode instructions
+	constants []object.Object
+	// The active stack used during execution
+	stack []object.Object
+	// Pointer next open space on the stack
+	sp int
+	// Stack of global objects in the current program
+	globals []object.Object
+	// Stack of frames for function execution
+	frames []*Frame
+	// Pointer to the next open place on the frames stack
+	framesIndex int
 }
 
 // Create a new VM instance from the provided bytecode.
 func New(bytecode *compiler.Bytecode) *VM {
+	// Represent the entire program as a Closure so that each level of
+	// execution operate the same.
 	mainLambda := &object.CompiledLambda{
 		Instructions: bytecode.Instructions,
 	}
@@ -51,27 +62,17 @@ func New(bytecode *compiler.Bytecode) *VM {
 // Create a new VM instance from the provided bytecode, along with predefined
 // globals so that state can be maintained between VM instances.
 func NewWithState(bytecode *compiler.Bytecode, globals []object.Object) *VM {
-	mainLambda := &object.CompiledLambda{
-		Instructions: bytecode.Instructions,
-	}
-	mainClosure := &object.Closure{Lambda: mainLambda}
+	vm := New(bytecode)
+	vm.globals = globals
 
-	mainFrame := NewFrame(mainClosure, 0)
-
-	frames := make([]*Frame, MaxFrames)
-	frames[0] = mainFrame
-
-	return &VM{
-		constants:   bytecode.Constants,
-		stack:       make([]object.Object, StackSize),
-		sp:          0,
-		globals:     globals,
-		frames:      frames,
-		framesIndex: 1,
-	}
+	return vm
 }
 
 // Execute the bytecode instructions, using a fetch, decode, execute cycle.
+//
+// The top Frame of the VM represents the currently executing state of the VM,
+// including executing instructions in the form of a Closure, the instruction
+// pointer, and the pointer to where the current Frame execution began.
 //
 // Returns an error if something in execution fails.
 func (vm *VM) Run() error {
@@ -79,17 +80,19 @@ func (vm *VM) Run() error {
 	var ins code.Instructions
 	var op code.Opcode
 
-	// fetch
+	// Fetch
 	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
 		vm.currentFrame().ip++
 		ip = vm.currentFrame().ip
 		ins = vm.currentFrame().Instructions()
 		op = code.Opcode(ins[ip])
 
-		// decode
+		// Decode
 		switch op {
 		case code.OpConstant:
-			// execute
+			// Execute
+
+			// Place the references constant on top of the stack.
 			constIndex := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 
@@ -99,46 +102,59 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpPop:
+			// Remove the top item from the stack.
 			vm.pop()
 		case code.OpTrue:
+			// Place the value of 'true' of top of the stack.
 			err := vm.push(True)
 
 			if err != nil {
 				return err
 			}
 		case code.OpFalse:
+			// Place the value of 'false' of top of the stack.
 			err := vm.push(False)
 
 			if err != nil {
 				return err
 			}
 		case code.OpJump:
+			// Move the instruction pointer to the position provided.
 			pos := int(code.ReadUint16(ins[ip+1:]))
 
-			// decrement jump position so that we arrive at the target position
-			// when the cycle increments the instruction pointer
+			// Decrement the new position so that we arrive at the target
+			// position when the cycle increments the instruction pointer.
 			vm.currentFrame().ip = pos - 1
 		case code.OpJumpWhenFalse:
+			// Take the object on top of the stack and evaluate its truthiness,
+			// jump to the provided instruction position if the evaluation is
+			// false.
 			pos := int(code.ReadUint16(ins[ip+1:]))
 			vm.currentFrame().ip += 2
 
 			condition := vm.pop()
 
 			if !isTruthy(condition) {
+				// Decrement the new position so that we arrive at the target
+				// position when the cycle increments the instruction pointer.
 				vm.currentFrame().ip = pos - 1
 			}
 		case code.OpNull:
+			// Place the value of 'null' of top of the stack.
 			err := vm.push(Null)
 
 			if err != nil {
 				return err
 			}
 		case code.OpSetGlobal:
+			// Set the value of the global at the provided index to the object
+			// on top of the stack without removing the object from the stack.
 			index := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 
 			vm.globals[index] = vm.stack[vm.sp-1]
 		case code.OpGetGlobal:
+			// Place the requested global value onto the top of the stack.
 			index := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 
@@ -148,6 +164,8 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpSetLocal:
+			// Set the value of the local at the provided index to the object on
+			// top of the stack without removing the object from the stack.
 			index := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
@@ -155,17 +173,23 @@ func (vm *VM) Run() error {
 
 			vm.stack[basePointer+index] = vm.stack[vm.sp-1]
 		case code.OpGetLocal:
+			// Place the requested local value onto the top of the stack.
 			index := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
 			basePointer := vm.currentFrame().basePointer
 
+			// Local values are retrieved from the 'hole' in the stack
+			// that's reserved for locals, which sits just above the
+			// currently executing Closure.
 			err := vm.push(vm.stack[basePointer+index])
 
 			if err != nil {
 				return err
 			}
 		case code.OpGetBuiltin:
+			// Retrieve the builtin function at the provided index and place it
+			// on top of the stack.
 			index := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
@@ -175,6 +199,8 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCall:
+			// Execute the function at the top of the stack, using the arguments
+			// placed on top of it.
 			argCount := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
@@ -184,6 +210,10 @@ func (vm *VM) Run() error {
 			// the stack.
 			switch fn := vm.stack[vm.sp-argCount-1].(type) {
 			case *object.Closure:
+				// When executing a Closure, a new frame is created and pushed
+				// onto the frame stack, the next loop through Run will use the
+				// instructions and values of the new Frame, which will be
+				// popped off the frame stack when execution completes.
 				if argCount != fn.Lambda.ParameterCount {
 					return fmt.Errorf(
 						"wrong number of arguments: expected=%d got=%d",
@@ -203,6 +233,8 @@ func (vm *VM) Run() error {
 				// to be used as normal in instruction execution.
 				vm.sp = frame.basePointer + fn.Lambda.LocalsCount
 			case *object.FunctionObject:
+				// When executing a builtin function, call the inner function
+				// written in go and push the resulting value onto the stack.
 				args := vm.stack[vm.sp-argCount : vm.sp]
 				result := fn.Fn(args...)
 
@@ -217,6 +249,9 @@ func (vm *VM) Run() error {
 				return fmt.Errorf("calling non-function")
 			}
 		case code.OpReturn:
+			// Return the value from a function. Pop the current Frame from the
+			// frame stack and remove its execution state from the stack, then
+			// push the resulting value on to the top of the stack
 			returnValue := vm.pop()
 
 			frame := vm.popFrame()
@@ -228,12 +263,16 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpEmptyList:
+			// Place an empty list object on top of the stack.
 			err := vm.push(&object.List{})
 
 			if err != nil {
 				return err
 			}
 		case code.OpClosure:
+			// Create a Closure object from the CompiledLambda at the provided
+			// index and the free variables from the top of the stack, then
+			// place the new Closure on top of the stack.
 			index := code.ReadUint16(ins[ip+1:])
 			freeCount := int(ins[ip+3])
 			vm.currentFrame().ip += 3
@@ -257,6 +296,8 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpGetFree:
+			// Retrieve the free variable at the provided index from the
+			// free variables associated with the Closure of the current Frame.
 			index := int(ins[ip+1])
 			vm.currentFrame().ip += 1
 
@@ -266,6 +307,8 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCurrentClosure:
+			// Place the Closure of the currently executing Frame and place it
+			// on top of the stack
 			currentClosure := vm.currentFrame().Closure
 
 			err := vm.push(currentClosure)
