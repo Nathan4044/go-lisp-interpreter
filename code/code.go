@@ -1,4 +1,5 @@
-// The code package contains the means to represent instructions
+// The code package contains the means to represent instructions that are
+// executed by the VM.
 package code
 
 import (

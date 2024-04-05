@@ -21,8 +21,8 @@ type compilerTestCase struct {
 	expectedInstructions []code.Instructions
 }
 
-// Ensure integer literals are comiled correctly.
-func TestIntegerLiterals(t *testing.T) {
+// Ensure integer and float literals are comiled correctly.
+func TestNumberLiterals(t *testing.T) {
 	tests := []compilerTestCase{
 		{
 			input:             "1 2",
@@ -43,6 +43,14 @@ func TestIntegerLiterals(t *testing.T) {
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpPop),
 				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:             "1.3",
+			expectedConstants: []interface{}{1.3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
 				code.Make(code.OpPop),
 			},
 		},
@@ -810,6 +818,12 @@ func testConstants(
 			if err != nil {
 				return fmt.Errorf("constant %d - testIntegerObject failed: %s", i, err)
 			}
+		case float64:
+			err := testFloatObject(constant, actual[i])
+
+			if err != nil {
+				return fmt.Errorf("constant %d - testFloatObject failed: %s", i, err)
+			}
 		case string:
 			err := testStringObject(constant, actual[i])
 
@@ -844,6 +858,20 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 	if result.Value != expected {
 		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
+	}
+
+	return nil
+}
+
+func testFloatObject(expected float64, actual object.Object) error {
+	result, ok := actual.(*object.Float)
+
+	if !ok {
+		return fmt.Errorf("object is not Float: got=%T(%+v)", actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value: got=%f want=%f", result.Value, expected)
 	}
 
 	return nil

@@ -11,7 +11,7 @@ import (
 )
 
 // Ensure arithmetic functions as expected.
-func TestIntegerArithmetic(t *testing.T) {
+func TestArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
 		{"2", 2},
@@ -20,6 +20,8 @@ func TestIntegerArithmetic(t *testing.T) {
 		{"(* 1 2 3 4)", 24},
 		{"(- 123 23 1)", 99},
 		{"(/ 8 2 2)", 2},
+		{"1.3", 1.3},
+		{"(/ 4 3)", 4.0 / 3},
 	}
 
 	runVmTests(t, tests)
@@ -307,7 +309,7 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-// Check that an Object is an IntegerObject and that its value is correct.
+// Check that an Object is an Integer and that its value is correct.
 func testIntegerObject(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 
@@ -317,6 +319,21 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 	if result.Value != expected {
 		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
+	}
+
+	return nil
+}
+
+// Check that an Object is a Float and that its value is correct.
+func testFloatObject(expected float64, actual object.Object) error {
+	result, ok := actual.(*object.Float)
+
+	if !ok {
+		return fmt.Errorf("object is not float: got=%T(%+v)", actual, actual)
+	}
+
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value: got=%f want=%f", result.Value, expected)
 	}
 
 	return nil
@@ -337,7 +354,7 @@ func testBooleanObject(expected bool, actual object.Object) error {
 	return nil
 }
 
-// Check an Object is a string and that its value is correct.
+// Check an Object is a String and that its value is correct.
 func testStringObject(expected string, actual object.Object) error {
 	result, ok := actual.(*object.String)
 
@@ -396,6 +413,12 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 
 		if err != nil {
 			t.Errorf("testIntegerObject failed: %s", err)
+		}
+	case float64:
+		err := testFloatObject(expected, actual)
+
+		if err != nil {
+			t.Errorf("testFloatObject failed: %s", err)
 		}
 	case bool:
 		err := testBooleanObject(expected, actual)

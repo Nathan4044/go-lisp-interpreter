@@ -1,3 +1,5 @@
+// The vm package contains the definition of the VM type, which executes
+// bytecode instructions created by a Compiler.
 package vm
 
 import (
