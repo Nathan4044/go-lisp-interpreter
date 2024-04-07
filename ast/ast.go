@@ -91,6 +91,9 @@ func (sl *StringLiteral) expression() {}
 type SExpression struct {
 	Fn   Expression
 	Args []Expression
+	// Name is only used in the compiler. The purpose is to associate a name
+	// with a lambda expression to detect recursive calls.
+	Name string
 }
 
 // Recursively print the values in the SExpression.

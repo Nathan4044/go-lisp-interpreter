@@ -7,24 +7,27 @@ import (
 	"fmt"
 	"hash/fnv"
 	"lisp/ast"
+	"lisp/code"
 	"strings"
 )
 
 const (
-	INTEGER_OBJ  = "INTEGER"
-	FLOAT_OBJ    = "FLOAT"
-	STRING_OBJ   = "STRING"
-	FUNCTION_OBJ = "FUNCTION"
-	LIST_OBJ     = "LIST"
-	DICT_OBJ     = "DICT"
-	BOOLEAN_OBJ  = "BOOL"
-	LAMBDA_OBJ   = "LAMBDA"
-	NULL_OBJ     = "NULL"
-	ERROR_OBJ    = "ERROR"
+	INTEGER_OBJ           = "INTEGER"
+	FLOAT_OBJ             = "FLOAT"
+	STRING_OBJ            = "STRING"
+	FUNCTION_OBJ          = "FUNCTION"
+	LIST_OBJ              = "LIST"
+	DICT_OBJ              = "DICT"
+	BOOLEAN_OBJ           = "BOOL"
+	LAMBDA_OBJ            = "LAMBDA"
+	NULL_OBJ              = "NULL"
+	ERROR_OBJ             = "ERROR"
+	COMPILED_FUNCTION_OBJ = "COMPILED_FUNCTION"
+	CLOSURE_OBJ           = "CLOSURE"
 )
 
 // The Function type is the definition of a builtin function.
-type Function func(env *Environment, args ...Object) Object
+type Function func(args ...Object) Object
 
 type ObjectType string
 
@@ -110,8 +113,8 @@ func (l *List) Inspect() string {
 // This provides the ability to associate builtin functions as
 // a lisp Object.
 type FunctionObject struct {
-	Fn   Function
 	Name string
+	Fn   Function
 }
 
 func (f *FunctionObject) Type() ObjectType {
@@ -275,4 +278,37 @@ func (d *Dictionary) Inspect() string {
 	result.WriteString("}")
 
 	return result.String()
+}
+
+// CompiledLambda is an object that holds compiled instructions.
+type CompiledLambda struct {
+	Instructions   code.Instructions
+	LocalsCount    int
+	ParameterCount int
+}
+
+func (cl *CompiledLambda) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+
+// Provide a string representation of the compiled lambda, providing its
+// pointer as a means to distinguish between inspected lambdas.
+func (cl *CompiledLambda) Inspect() string {
+	return fmt.Sprintf("CompiledLambda[%p]", cl)
+}
+
+// Closure is a wrapper around a CompiledFunction instance that allows it to
+// carry free variables with it, which are variables defined in an enclosing
+// scope. All CompiledLambda objects will be wrapped and treated as Closures.
+type Closure struct {
+	Lambda *CompiledLambda
+	Free   []Object
+}
+
+func (cl *Closure) Type() ObjectType {
+	return COMPILED_FUNCTION_OBJ
+}
+
+func (cl *Closure) Inspect() string {
+	return fmt.Sprintf("Closure[%p]", cl)
 }
