@@ -90,14 +90,19 @@ func StartCompiled(in io.Reader, out io.Writer) {
 		err := c.Compile(program)
 
 		if err != nil {
-			fmt.Fprintf(out, "compiler error: %s", err)
+			fmt.Fprintf(out, "compiler error: %s\n", err)
+			continue
 		}
+
+		// preserve constants between commands
+		constants = c.Bytecode().Constants
 
 		v := vm.NewWithState(c.Bytecode(), globals)
 		err = v.Run()
 
 		if err != nil {
-			fmt.Fprintf(out, "vm error: %s", err)
+			fmt.Fprintf(out, "vm error: %s\n", err)
+			continue
 		}
 
 		result := v.LastPoppedStackElem()

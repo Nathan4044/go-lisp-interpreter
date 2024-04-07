@@ -238,7 +238,14 @@ func (vm *VM) Run() error {
 				// When executing a builtin function, call the inner function
 				// written in go and push the resulting value onto the stack.
 				args := vm.stack[vm.sp-argCount : vm.sp]
+
 				result := fn.Fn(args...)
+
+				if result.Type() == object.ERROR_OBJ {
+					errObj, _ := result.(*object.ErrorObject)
+
+					return fmt.Errorf("%s", errObj.Error)
+				}
 
 				vm.sp = vm.sp - argCount - 1
 
@@ -291,6 +298,8 @@ func (vm *VM) Run() error {
 			for i := 0; i < freeCount; i++ {
 				freeVariables[i] = vm.stack[vm.sp-freeCount+i]
 			}
+
+			vm.sp -= freeCount
 
 			err := vm.push(&object.Closure{Lambda: lambda, Free: freeVariables})
 
@@ -348,9 +357,7 @@ func (vm *VM) push(o object.Object) error {
 // Return the item from the top of the stack and decrement the stack pointer.
 func (vm *VM) pop() object.Object {
 	o := vm.stack[vm.sp-1]
-
 	vm.sp--
-
 	return o
 }
 

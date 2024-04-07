@@ -18,7 +18,7 @@ var engine *string = flag.String("engine", "vm", "enter 'vm' or 'eval'")
 
 func main() {
 	flag.Parse()
-	fmt.Printf("%+v\n", flag.Args())
+
 	switch len(flag.Args()) {
 	// if there are no args provided, evaluate from stdin
 	case 0:
@@ -87,15 +87,17 @@ func runCompiled(source string) {
 	err := c.Compile(program)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "compiler error: %s", err)
+		fmt.Fprintf(os.Stderr, "compiler error: %s\n", err)
+		return
 	}
 
 	v := vm.New(c.Bytecode())
 	err = v.Run()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "vm error: %s", err)
+		fmt.Fprintf(os.Stderr, "vm error: %s\n", err)
+		return
 	}
 
-	fmt.Println(v.LastPoppedStackElem())
+	fmt.Println(v.LastPoppedStackElem().Inspect())
 }

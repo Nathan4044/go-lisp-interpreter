@@ -234,9 +234,9 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`(len "hello")`, 5},
 		{
 			`(len 1)`,
-			object.ErrorObject{
-				Error: "",
-			},
+			fmt.Errorf(
+				"attempted to call len with unsupported type INTEGER (1)",
+			),
 		},
 		{
 			`(print "hello")`,
@@ -295,6 +295,20 @@ func TestClosures(t *testing.T) {
             (wrapper)
             `,
 			expected: 0,
+		},
+		{
+			input: `
+            (def reduce (lambda (lst f acc)
+                (if (= 0 (len lst))
+                    acc
+                    (reduce (rest lst) f (f acc (first lst))))))
+
+            (def map (lambda (lst fn)
+                (reduce lst (lambda (acc n) (push acc (fn n))) '())))
+
+            (map '(1 2 3) (lambda (n) (* n n)))
+            `,
+			expected: []interface{}{1, 4, 9},
 		},
 	}
 
@@ -414,7 +428,16 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		err = vm.Run()
 
 		if err != nil {
-			t.Fatalf("vm error: %s", err)
+			expectedError, ok := tt.expected.(error)
+
+			if ok {
+				if expectedError.Error() != err.Error() {
+					t.Errorf("incorrect error: want=%q got=%q",
+						expectedError, err)
+				}
+			} else {
+				t.Fatalf("vm error: %s", err)
+			}
 		}
 
 		stackElem := vm.LastPoppedStackElem()
@@ -466,6 +489,15 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 	case *object.Null:
 		if actual != Null {
 			t.Errorf("object is not null: %T(%+v)", actual, actual)
+		}
+	case []interface{}:
+		listObj, ok := actual.(*object.List)
+
+		if !ok {
+		}
+
+		for i, v := range listObj.Values {
+			testExpectedObject(t, expected[i], v)
 		}
 	}
 }

@@ -25,8 +25,6 @@ var builtins = map[string]*object.FunctionObject{
 	"last":  object.GetBuiltinByName("last"),
 	"len":   object.GetBuiltinByName("len"),
 	"push":  object.GetBuiltinByName("push"),
-	"push!": object.GetBuiltinByName("push!"),
-	"pop!":  object.GetBuiltinByName("pop!"),
 	"str":   object.GetBuiltinByName("str"),
 	"print": object.GetBuiltinByName("print"),
 	"get":   object.GetBuiltinByName("get"),

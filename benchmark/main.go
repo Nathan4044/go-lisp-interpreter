@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"lisp/compiler"
 	"lisp/evaluator"
@@ -12,8 +11,6 @@ import (
 	"os"
 	"time"
 )
-
-var engine *string = flag.String("engine", "vm", "select 'eval' or 'vm'")
 
 var input string = `
 (def fibonacci (lambda (n)
@@ -26,43 +23,44 @@ var input string = `
 `
 
 func main() {
-	flag.Parse()
-
 	var duration time.Duration
 	var result object.Object
+
+	fmt.Println("recursively calculating the 35th fibonacci number:")
 
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
 
-	if *engine == "vm" {
-		start := time.Now()
+	start := time.Now()
 
-		c := compiler.New()
-		err := c.Compile(program)
+	env := object.NewEnvironment(nil)
+	result = evaluator.Evaluate(program, env)
 
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "compiler error: %s", err)
-		}
-
-		vm := vm.New(c.Bytecode())
-		err = vm.Run()
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "vm error: %s", err)
-		}
-
-		duration = time.Since(start)
-		result = vm.LastPoppedStackElem()
-	} else {
-		start := time.Now()
-
-		env := object.NewEnvironment(nil)
-		result = evaluator.Evaluate(program, env)
-
-		duration = time.Since(start)
-	}
+	duration = time.Since(start)
 
 	fmt.Printf("engine=%s result=%s duration=%s\n",
-		*engine, result.Inspect(), duration)
+		"eval", result.Inspect(), duration)
+
+	start = time.Now()
+
+	c := compiler.New()
+	err := c.Compile(program)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "compiler error: %s", err)
+	}
+
+	vm := vm.New(c.Bytecode())
+	err = vm.Run()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "vm error: %s", err)
+	}
+
+	duration = time.Since(start)
+	result = vm.LastPoppedStackElem()
+
+	fmt.Printf("engine=%s result=%s duration=%s\n",
+		"vm", result.Inspect(), duration)
 }

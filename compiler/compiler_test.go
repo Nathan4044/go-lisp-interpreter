@@ -645,6 +645,292 @@ func TestRecursiveClosures(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+		{
+			input: `
+            (def exbo (lambda (n)
+                (if (= n 1)
+                    n
+                    (* n (exbo (- n 1))))))
+            (exbo 4)
+            `,
+			expectedConstants: []interface{}{
+				1,
+				1,
+				[]code.Instructions{
+					// 0000
+					code.Make(code.OpGetBuiltin, 5),
+					// 0002
+					code.Make(code.OpGetLocal, 0),
+					// 0004
+					code.Make(code.OpConstant, 0),
+					// 0007
+					code.Make(code.OpCall, 2),
+					// 0009
+					code.Make(code.OpJumpWhenFalse, 17),
+					// 0012
+					code.Make(code.OpGetLocal, 0),
+					// 0014
+					code.Make(code.OpJump, 35),
+					// 0017
+					code.Make(code.OpGetBuiltin, 1),
+					// 0019
+					code.Make(code.OpGetLocal, 0),
+					// 0021
+					code.Make(code.OpCurrentClosure),
+					// 0022
+					code.Make(code.OpGetBuiltin, 2),
+					// 0024
+					code.Make(code.OpGetLocal, 0),
+					// 0026
+					code.Make(code.OpConstant, 1),
+					// 0029
+					code.Make(code.OpCall, 2),
+					// 0031
+					code.Make(code.OpCall, 1),
+					// 0033
+					code.Make(code.OpCall, 2),
+					// 0035
+					code.Make(code.OpReturn),
+				},
+				4,
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 2, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (def reduce (lambda (lst f acc) 
+                (if (= 0 (len lst)) 
+                    acc
+                    (reduce (rest lst) f (f acc (first lst))))))
+            (def map (lambda (lst f)
+                (def func (lambda (acc n)
+                    (push acc (f n))))
+                (reduce lst func '())))
+            (def l '(1 2 3))
+            (map l (lambda (n) (* 2 n)))
+            `,
+			expectedConstants: []interface{}{
+				0,
+				[]code.Instructions{
+					// 0000
+					code.Make(code.OpGetBuiltin, 5),
+					// 0002
+					code.Make(code.OpConstant, 0),
+					// 0005
+					code.Make(code.OpGetBuiltin, 16),
+					// 0007
+					code.Make(code.OpGetLocal, 0),
+					// 0009
+					code.Make(code.OpCall, 1),
+					// 0011
+					code.Make(code.OpCall, 2),
+					// 0013
+					code.Make(code.OpJumpWhenFalse, 21),
+					// 0016
+					code.Make(code.OpGetLocal, 2),
+					// 0018
+					code.Make(code.OpJump, 44),
+					// 0021
+					code.Make(code.OpCurrentClosure),
+					// 0022
+					code.Make(code.OpGetBuiltin, 14),
+					// 0024
+					code.Make(code.OpGetLocal, 0),
+					// 0026
+					code.Make(code.OpCall, 1),
+					// 0028
+					code.Make(code.OpGetLocal, 1),
+					// 0030
+					code.Make(code.OpGetLocal, 1),
+					// 0032
+					code.Make(code.OpGetLocal, 2),
+					// 0034
+					code.Make(code.OpGetBuiltin, 13),
+					// 0036
+					code.Make(code.OpGetLocal, 0),
+					// 0038
+					code.Make(code.OpCall, 1),
+					// 0040
+					code.Make(code.OpCall, 2),
+					// 0042
+					code.Make(code.OpCall, 3),
+					// 0044
+					code.Make(code.OpReturn),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltin, 17),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpReturn),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpClosure, 2, 1),
+					code.Make(code.OpSetLocal, 2),
+					code.Make(code.OpPop),
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 2),
+					code.Make(code.OpGetBuiltin, 11),
+					code.Make(code.OpCall, 0),
+					code.Make(code.OpCall, 3),
+					code.Make(code.OpReturn),
+				},
+				1,
+				2,
+				3,
+				2,
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltin, 1),
+					code.Make(code.OpConstant, 7),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpClosure, 3, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetBuiltin, 11),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpConstant, 6),
+				code.Make(code.OpCall, 3),
+				code.Make(code.OpSetGlobal, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpGetGlobal, 2),
+				code.Make(code.OpClosure, 8, 0),
+				code.Make(code.OpCall, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+            (def reduce (lambda (lst f acc) 
+                (if (= 0 (len lst)) 
+                    acc
+                    (reduce (rest lst) f (f acc (first lst))))))
+            (def map (lambda (lst f)
+                (reduce lst (lambda (acc n) (push acc (f n))) '())))
+            (def l '(1 2 3))
+            (map l (lambda (n) (* 2 n)))
+            `,
+			expectedConstants: []interface{}{
+				0,
+				[]code.Instructions{
+					// 0000
+					code.Make(code.OpGetBuiltin, 5),
+					// 0002
+					code.Make(code.OpConstant, 0),
+					// 0005
+					code.Make(code.OpGetBuiltin, 16),
+					// 0007
+					code.Make(code.OpGetLocal, 0),
+					// 0009
+					code.Make(code.OpCall, 1),
+					// 0011
+					code.Make(code.OpCall, 2),
+					// 0013
+					code.Make(code.OpJumpWhenFalse, 21),
+					// 0016
+					code.Make(code.OpGetLocal, 2),
+					// 0018
+					code.Make(code.OpJump, 44),
+					// 0021
+					code.Make(code.OpCurrentClosure),
+					// 0022
+					code.Make(code.OpGetBuiltin, 14),
+					// 0024
+					code.Make(code.OpGetLocal, 0),
+					// 0026
+					code.Make(code.OpCall, 1),
+					// 0028
+					code.Make(code.OpGetLocal, 1),
+					// 0030
+					code.Make(code.OpGetLocal, 1),
+					// 0032
+					code.Make(code.OpGetLocal, 2),
+					// 0034
+					code.Make(code.OpGetBuiltin, 13),
+					// 0036
+					code.Make(code.OpGetLocal, 0),
+					// 0038
+					code.Make(code.OpCall, 1),
+					// 0040
+					code.Make(code.OpCall, 2),
+					// 0042
+					code.Make(code.OpCall, 3),
+					// 0044
+					code.Make(code.OpReturn),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltin, 17),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetFree, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpReturn),
+				},
+				[]code.Instructions{
+					code.Make(code.OpGetGlobal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 1),
+					code.Make(code.OpClosure, 2, 1),
+					code.Make(code.OpGetBuiltin, 11),
+					code.Make(code.OpCall, 0),
+					code.Make(code.OpCall, 3),
+					code.Make(code.OpReturn),
+				},
+				1,
+				2,
+				3,
+				2,
+				[]code.Instructions{
+					code.Make(code.OpGetBuiltin, 1),
+					code.Make(code.OpConstant, 7),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpCall, 2),
+					code.Make(code.OpReturn),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpClosure, 3, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetBuiltin, 11),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpConstant, 6),
+				code.Make(code.OpCall, 3),
+				code.Make(code.OpSetGlobal, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpGetGlobal, 2),
+				code.Make(code.OpClosure, 8, 0),
+				code.Make(code.OpCall, 2),
+				code.Make(code.OpPop),
+			},
+		},
 	}
 
 	runCompilerTests(t, tests)

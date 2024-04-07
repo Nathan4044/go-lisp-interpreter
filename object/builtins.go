@@ -306,8 +306,17 @@ var Builtins = []*FunctionObject{
 	{
 		"list",
 		func(args ...Object) Object {
+			values := make([]Object, len(args), len(args))
+
+			// Loop ensures that the args are referenced as individual objects,
+            // using args directly makes values a reference to args' underlying
+            // slice, which can be changed elsewhere.
+			for i, arg := range args {
+				values[i] = arg
+			}
+
 			return &List{
-				Values: args,
+				Values: values,
 			}
 		},
 	},
@@ -354,6 +363,11 @@ var Builtins = []*FunctionObject{
 			}
 
 			list := args[0].(*List)
+
+			if len(list.Values) == 0 {
+				return NULL
+			}
+
 			return list.Values[0]
 		},
 	},
@@ -369,6 +383,11 @@ var Builtins = []*FunctionObject{
 			}
 
 			list := args[0].(*List)
+
+			if len(list.Values) == 0 {
+				return NULL
+			}
+
 			return &List{
 				Values: list.Values[1:],
 			}
@@ -386,6 +405,11 @@ var Builtins = []*FunctionObject{
 			}
 
 			list := args[0].(*List)
+
+			if len(list.Values) == 0 {
+				return NULL
+			}
+
 			return list.Values[len(list.Values)-1]
 		},
 	},
@@ -421,7 +445,7 @@ var Builtins = []*FunctionObject{
 
 			if args[0].Type() != LIST_OBJ {
 				return &ErrorObject{
-					Error: fmt.Sprintf("first argument to concat should be list. got=%T(%+v)",
+					Error: fmt.Sprintf("first argument to push should be list. got=%T(%+v)",
 						args[0], args[0]),
 				}
 			}
@@ -434,63 +458,6 @@ var Builtins = []*FunctionObject{
 			newList = append(newList, args[1])
 
 			return &List{Values: newList}
-		},
-	},
-	// Takes two arguments, a list and an
-	//
-	// Appends the object to the list in place, returning
-	// a reference to the same list.
-	{
-		"push!",
-		func(args ...Object) Object {
-			if len(args) != 2 {
-				return WrongNumOfArgsError("push", "2", len(args))
-			}
-
-			if args[0].Type() != LIST_OBJ {
-				return &ErrorObject{
-					Error: fmt.Sprintf("first argument to concat should be list. got=%T(%+v)",
-						args[0], args[0]),
-				}
-			}
-
-			list := args[0].(*List)
-			list.Values = append(list.Values, args[1])
-
-			return list
-		},
-	},
-	// Takes a list as its argument.
-	//
-	// Removes the last object from the list in place
-	// and returns the popped
-	{
-		"pop!",
-		func(args ...Object) Object {
-			if len(args) != 1 {
-				return WrongNumOfArgsError("pop", "1", len(args))
-			}
-
-			if args[0].Type() != LIST_OBJ {
-				return &ErrorObject{
-					Error: fmt.Sprintf("argument to pop should be list. got=%T(%+v)",
-						args[0], args[0]),
-				}
-			}
-
-			list := args[0].(*List)
-
-			if len(list.Values) == 0 {
-				return &ErrorObject{
-					Error: "attemped to pop from empty list",
-				}
-			}
-
-			result := list.Values[len(list.Values)-1]
-
-			list.Values = list.Values[:len(list.Values)-1]
-
-			return result
 		},
 	},
 	// string representation of any object
