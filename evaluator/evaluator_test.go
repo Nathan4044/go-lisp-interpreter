@@ -17,31 +17,31 @@ func TestEvaluateIntegerLiteral(t *testing.T) {
 	tests := []evaluatorTest{
 		{
 			input:    "6",
-			expected: int64(6),
+			expected: float64(6),
 		},
 		{
 			input:    "600",
-			expected: int64(600),
+			expected: float64(600),
 		},
 		{
 			input:    "6 600",
-			expected: int64(600),
+			expected: float64(600),
 		},
 		{
 			input:    "-6",
-			expected: int64(-6),
+			expected: float64(-6),
 		},
 		{
 			input:    "(+ 1 2)",
-			expected: int64(3),
+			expected: float64(3),
 		},
 		{
 			input:    "(+ 1 2 3)",
-			expected: int64(6),
+			expected: float64(6),
 		},
 		{
 			input:    "(+)",
-			expected: int64(0),
+			expected: float64(0),
 		},
 	}
 
@@ -230,7 +230,7 @@ func TestIfExpression(t *testing.T) {
 		{
 			input: `(if true
             1)`,
-			expected: int64(1),
+			expected: float64(1),
 		},
 		{
 			input: `(if false
@@ -240,13 +240,13 @@ func TestIfExpression(t *testing.T) {
 		{
 			input: `(if 1
             1)`,
-			expected: int64(1),
+			expected: float64(1),
 		},
 		{
 			input: `(if false
             1
             2)`,
-			expected: int64(2),
+			expected: float64(2),
 		},
 	}
 
@@ -256,9 +256,9 @@ func TestIfExpression(t *testing.T) {
 func TestDefineExpression(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected int64
+		expected float64
 		envIdent string
-		envValue int64
+		envValue float64
 	}{
 		{
 			"(def x 1) x",
@@ -297,26 +297,26 @@ func TestDefineExpression(t *testing.T) {
 
 		output := Evaluate(program, env)
 
-		result, ok := output.(*object.Integer)
+		result, ok := output.(*object.Number)
 
 		if !ok {
-			t.Fatalf("expected integer, instead got %T(%+V)", output, output)
+			t.Fatalf("expected Number, instead got %T(%+V)", output, output)
 		}
 
 		if result.Value != tt.expected {
-			t.Errorf("expected %d, got %d", tt.expected, result.Value)
+			t.Errorf("expected %f, got %f", tt.expected, result.Value)
 		}
 
 		entry := env.Get(tt.envIdent)
 
-		val, ok := entry.(*object.Integer)
+		val, ok := entry.(*object.Number)
 
 		if !ok {
 			t.Fatalf("expected integer, instead got %T(%+V)", entry, entry)
 		}
 
 		if val.Value != tt.envValue {
-			t.Errorf("expected %d, got %d", tt.envValue, val.Value)
+			t.Errorf("expected %f, got %f", tt.envValue, val.Value)
 		}
 	}
 }
@@ -333,8 +333,6 @@ func runEvalTests(t *testing.T, tests []evaluatorTest) {
 		result := Evaluate(program, env)
 
 		switch expected := tt.expected.(type) {
-		case int64:
-			testIntegerLiteral(t, result, expected)
 		case float64:
 			testFloatLiteral(t, result, expected)
 		case bool:
@@ -353,20 +351,6 @@ func runEvalTests(t *testing.T, tests []evaluatorTest) {
 		default:
 			t.Errorf("invalid expected type %T(%+v)", expected, expected)
 		}
-	}
-}
-
-func testIntegerLiteral(t *testing.T, obj object.Object, expected int64) {
-	t.Helper()
-
-	i, ok := obj.(*object.Integer)
-
-	if !ok {
-		t.Fatalf("expected integer, got=%T(%+v)", obj, obj)
-	}
-
-	if i.Value != expected {
-		t.Errorf("%d != %d", i.Value, expected)
 	}
 }
 
@@ -401,7 +385,7 @@ func testBooleanLiteral(t *testing.T, obj object.Object, expected bool) {
 func testFloatLiteral(t *testing.T, obj object.Object, expected float64) {
 	t.Helper()
 
-	float, ok := obj.(*object.Float)
+	float, ok := obj.(*object.Number)
 
 	if !ok {
 		t.Fatalf("expected float, got=%T(%+v)", obj, obj)

@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	INTEGER_OBJ           = "INTEGER"
-	FLOAT_OBJ             = "FLOAT"
+	NUMBER_OBJ            = "NUMBER"
 	STRING_OBJ            = "STRING"
 	FUNCTION_OBJ          = "FUNCTION"
 	LIST_OBJ              = "LIST"
@@ -37,32 +36,32 @@ type Object interface {
 	Inspect() string  // Return a string representation of the Object.
 }
 
-// Integer is an Object that holds an integer value.
-type Integer struct {
-	Value int64
-}
-
-func (i *Integer) Type() ObjectType {
-	return INTEGER_OBJ
-}
-
-// Return the integer value as a string.
-func (i *Integer) Inspect() string {
-	return fmt.Sprintf("%d", i.Value)
-}
-
-// Float is an Object that holds a float value.
-type Float struct {
+// Number is an Object that holds a float value.
+type Number struct {
 	Value float64
 }
 
-func (f *Float) Type() ObjectType {
-	return FLOAT_OBJ
+func (f *Number) Type() ObjectType {
+	return NUMBER_OBJ
 }
 
 // Return the float value as a string.
-func (f *Float) Inspect() string {
-	return fmt.Sprintf("%f", f.Value)
+func (f *Number) Inspect() string {
+    if isInt(f.Value) {
+        return fmt.Sprintf("%d", int64(f.Value))
+    }
+
+    s := fmt.Sprintf("%f", f.Value)
+
+    for (s[len(s)-1] == '0') {
+        s = s[:len(s)-1]
+    }
+
+    if (s[len(s)-1] == '.') {
+        return fmt.Sprintf("%g", f.Value)
+    }
+
+    return s
 }
 
 // String is an Object that holds a string value.
@@ -212,11 +211,6 @@ type HashKey struct {
 // Used to establish if an Object can be used as a key in a Dictionary.
 type Hashable interface {
 	HashKey() HashKey
-}
-
-// Create a HashKey object that represents an Integer.
-func (i *Integer) HashKey() HashKey {
-	return HashKey{Type: INTEGER_OBJ, Value: uint64(i.Value)}
 }
 
 // Create a HashKey object that represents a Boolean.

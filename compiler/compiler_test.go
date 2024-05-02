@@ -1099,7 +1099,7 @@ func testConstants(
 	for i, constant := range expected {
 		switch constant := constant.(type) {
 		case int:
-			err := testIntegerObject(int64(constant), actual[i])
+			err := testIntegerObject(float64(constant), actual[i])
 
 			if err != nil {
 				return fmt.Errorf("constant %d - testIntegerObject failed: %s", i, err)
@@ -1135,22 +1135,22 @@ func testConstants(
 	return nil
 }
 
-func testIntegerObject(expected int64, actual object.Object) error {
-	result, ok := actual.(*object.Integer)
+func testIntegerObject(expected float64, actual object.Object) error {
+	result, ok := actual.(*object.Number)
 
 	if !ok {
 		return fmt.Errorf("object is not Integer: got=%T(%+v)", actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
+		return fmt.Errorf("object has wrong value: got=%f want=%f", result.Value, expected)
 	}
 
 	return nil
 }
 
 func testFloatObject(expected float64, actual object.Object) error {
-	result, ok := actual.(*object.Float)
+	result, ok := actual.(*object.Number)
 
 	if !ok {
 		return fmt.Errorf("object is not Float: got=%T(%+v)", actual, actual)

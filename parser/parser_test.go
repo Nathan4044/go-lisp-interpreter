@@ -16,15 +16,15 @@ func TestParseInteger(t *testing.T) {
 	tests := []parserTest{
 		{
 			input:    "5",
-			expected: int64(5),
+			expected: float64(5),
 		},
 		{
 			input:    "500",
-			expected: int64(500),
+			expected: float64(500),
 		},
 		{
 			input:    "-5",
-			expected: int64(-5),
+			expected: float64(-5),
 		},
 	}
 
@@ -231,8 +231,6 @@ func runParserTests(t *testing.T, tests []parserTest) {
 		}
 
 		switch expected := tt.expected.(type) {
-		case int64:
-			testIntegerLiteral(t, program.Expressions[0], expected)
 		case float64:
 			testFloatLiteral(t, program.Expressions[0], expected)
 		case string:
@@ -261,20 +259,6 @@ func testSExpression(t *testing.T, expr ast.Expression, expected string) {
 
 	if se.String() != expected {
 		t.Errorf("Expected=%s, got=%s", expected, se.String())
-	}
-}
-
-func testIntegerLiteral(t *testing.T, expr ast.Expression, expected int64) {
-	t.Helper()
-
-	integerLiteral, ok := expr.(*ast.IntegerLiteral)
-
-	if !ok {
-		t.Fatalf("wrong ast type. got=%T(%+v)", expr, expr)
-	}
-
-	if integerLiteral.Value != expected {
-		t.Errorf("wrong integer value. expected=%d, got=%d", expected, integerLiteral.Value)
 	}
 }
 

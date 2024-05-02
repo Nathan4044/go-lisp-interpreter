@@ -48,17 +48,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 func (p *Parser) parseExpression() ast.Expression {
 	switch p.curToken.Type {
 	case token.NUM:
-		int, err := strconv.ParseInt(p.curToken.Literal, 10, 64)
-
-		if err == nil {
-			tok := p.curToken
-			p.readToken()
-			return &ast.IntegerLiteral{
-				Token: tok,
-				Value: int,
-			}
-		}
-
 		float, err := strconv.ParseFloat(p.curToken.Literal, 64)
 
 		if err == nil {

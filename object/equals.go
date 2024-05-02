@@ -8,9 +8,7 @@ func numsEqual(first float64, rest ...Object) *BooleanObject {
 		var num float64
 
 		switch obj := arg.(type) {
-		case *Integer:
-			num = float64(obj.Value)
-		case *Float:
+		case *Number:
 			num = obj.Value
 		default:
 			return FALSE

@@ -28,10 +28,8 @@ func Evaluate(e ast.Expression, env *object.Environment) object.Object {
 		}
 
 		return result
-	case *ast.IntegerLiteral:
-		return &object.Integer{Value: e.Value}
 	case *ast.FloatLiteral:
-		return &object.Float{Value: e.Value}
+		return &object.Number{Value: e.Value}
 	case *ast.StringLiteral:
 		return &object.String{Value: e.Value}
 	case *ast.Identifier:

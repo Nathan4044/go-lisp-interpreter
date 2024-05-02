@@ -117,12 +117,8 @@ func (c *Compiler) Compile(expr ast.Expression) error {
 				return err
 			}
 		}
-	case *ast.IntegerLiteral:
-		integer := &object.Integer{Value: expr.Value}
-
-		c.emit(code.OpConstant, c.addConstant(integer))
 	case *ast.FloatLiteral:
-		float := &object.Float{Value: expr.Value}
+		float := &object.Number{Value: expr.Value}
 
 		c.emit(code.OpConstant, c.addConstant(float))
 	case *ast.StringLiteral:

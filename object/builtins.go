@@ -19,21 +19,16 @@ var Builtins = []*FunctionObject{
 			var result float64 = 0
 
 			for _, arg := range args {
-				switch obj := arg.(type) {
-				case *Integer:
-					result += float64(obj.Value)
-				case *Float:
-					result += obj.Value
-				default:
-					return BadTypeError("+", obj)
-				}
+                num, ok := arg.(*Number)
+
+                if !ok {
+					return BadTypeError("+", arg)
+                }
+
+                result += num.Value
 			}
 
-			if isInt(result) {
-				return &Integer{Value: int64(result)}
-			}
-
-			return &Float{Value: result}
+			return &Number{Value: result}
 		},
 	},
 	{
@@ -42,20 +37,16 @@ var Builtins = []*FunctionObject{
 			var result float64 = 1
 
 			for _, arg := range args {
-				switch obj := arg.(type) {
-				case *Integer:
-					result *= float64(obj.Value)
-				case *Float:
-					result *= obj.Value
-				default:
-					return BadTypeError("*", obj)
-				}
+                num, ok := arg.(*Number)
+
+                if !ok {
+					return BadTypeError("+", arg)
+                }
+
+                result *= num.Value
 			}
 
-			if isInt(result) {
-				return &Integer{Value: int64(result)}
-			}
-			return &Float{Value: result}
+			return &Number{Value: result}
 		},
 	},
 	{
@@ -68,21 +59,17 @@ var Builtins = []*FunctionObject{
 			var nums []float64
 
 			for _, arg := range args {
-				switch obj := arg.(type) {
-				case *Integer:
-					nums = append(nums, float64(obj.Value))
-				case *Float:
-					nums = append(nums, obj.Value)
-				default:
-					return BadTypeError("-", obj)
-				}
+                num, ok := arg.(*Number)
+
+                if !ok {
+					return BadTypeError("+", arg)
+                }
+
+				nums = append(nums, num.Value)
 			}
 
 			if len(nums) == 1 {
-				if isInt(nums[0]) {
-					return &Integer{Value: -int64(nums[0])}
-				}
-				return &Float{Value: -nums[0]}
+				return &Number{Value: -nums[0]}
 			} else {
 				result := nums[0]
 
@@ -90,10 +77,7 @@ var Builtins = []*FunctionObject{
 					result -= num
 				}
 
-				if isInt(result) {
-					return &Integer{Value: int64(result)}
-				}
-				return &Float{Value: result}
+				return &Number{Value: result}
 			}
 		},
 	},
@@ -107,18 +91,16 @@ var Builtins = []*FunctionObject{
 			var nums []float64
 
 			for _, arg := range args {
-				switch obj := arg.(type) {
-				case *Integer:
-					nums = append(nums, float64(obj.Value))
-				case *Float:
-					nums = append(nums, obj.Value)
-				default:
-					return BadTypeError("/", obj)
-				}
+                num, ok := arg.(*Number)
+
+                if !ok {
+					return BadTypeError("/", num)
+                }
+                nums = append(nums, num.Value)
 			}
 
 			if len(nums) == 1 {
-				return &Float{Value: 1 / nums[0]}
+				return &Number{Value: 1 / nums[0]}
 			} else {
 				result := nums[0]
 
@@ -131,10 +113,7 @@ var Builtins = []*FunctionObject{
 					result /= num
 				}
 
-				if isInt(result) {
-					return &Integer{Value: int64(result)}
-				}
-				return &Float{Value: result}
+				return &Number{Value: result}
 			}
 		},
 	},
@@ -146,25 +125,33 @@ var Builtins = []*FunctionObject{
 				return WrongNumOfArgsError("rem", "2", len(args))
 			}
 
-			var ints [2]int64
+            num, ok := args[0].(*Number)
 
-			for i, arg := range args {
-				switch obj := arg.(type) {
-				case *Integer:
-					ints[i] = obj.Value
-				default:
-					return BadTypeError("/", obj)
-				}
+            if !ok {
+                return BadTypeError("rem", num)
+            }
 
-			}
+            top := num.Value
 
-			if ints[1] == 0 {
+            num, ok = args[1].(*Number)
+
+            if !ok {
+                return BadTypeError("rem", num)
+            }
+
+            bottom := num.Value
+
+			if bottom == 0 {
 				return &ErrorObject{
 					Error: "Attempted rem of 0",
 				}
 			}
 
-			return &Integer{Value: ints[0] % ints[1]}
+            for (top >= bottom) {
+                top -= bottom
+            }
+
+            return &Number{Value: top}
 		},
 	},
 	// Analogous to `==` in other languages, but with any amount of arguments
@@ -178,9 +165,7 @@ var Builtins = []*FunctionObject{
 			obj := args[0]
 
 			switch obj := obj.(type) {
-			case *Integer:
-				return numsEqual(float64(obj.Value), args[1:]...)
-			case *Float:
+			case *Number:
 				return numsEqual(obj.Value, args[1:]...)
 			case *String:
 				return stringsEqual(obj, args[1:]...)
@@ -206,9 +191,7 @@ var Builtins = []*FunctionObject{
 
 			for _, arg := range args {
 				switch arg := arg.(type) {
-				case *Integer:
-					nums = append(nums, float64(arg.Value))
-				case *Float:
+				case *Number:
 					nums = append(nums, arg.Value)
 				default:
 					return BadTypeError("<", arg)
@@ -235,9 +218,7 @@ var Builtins = []*FunctionObject{
 
 			for _, arg := range args {
 				switch arg := arg.(type) {
-				case *Integer:
-					nums = append(nums, float64(arg.Value))
-				case *Float:
+				case *Number:
 					nums = append(nums, arg.Value)
 				default:
 					return BadTypeError(">", arg)
@@ -423,10 +404,10 @@ var Builtins = []*FunctionObject{
 			switch args[0].Type() {
 			case LIST_OBJ:
 				list := args[0].(*List)
-				return &Integer{Value: int64(len(list.Values))}
+				return &Number{Value: float64(len(list.Values))}
 			case STRING_OBJ:
 				str := args[0].(*String)
-				return &Integer{Value: int64(len(str.Value))}
+				return &Number{Value: float64(len(str.Value))}
 			default:
 				return BadTypeError("len", args[0])
 			}

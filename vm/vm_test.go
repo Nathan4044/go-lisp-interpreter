@@ -235,7 +235,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		{
 			`(len 1)`,
 			fmt.Errorf(
-				"attempted to call len with unsupported type INTEGER (1)",
+				"attempted to call len with unsupported type NUMBER (1)",
 			),
 		},
 		{
@@ -344,15 +344,15 @@ func parse(input string) *ast.Program {
 }
 
 // Check that an Object is an Integer and that its value is correct.
-func testIntegerObject(expected int64, actual object.Object) error {
-	result, ok := actual.(*object.Integer)
+func testIntegerObject(expected float64, actual object.Object) error {
+	result, ok := actual.(*object.Number)
 
 	if !ok {
 		return fmt.Errorf("object is not integer: got=%T(%+v)", actual, actual)
 	}
 
 	if result.Value != expected {
-		return fmt.Errorf("object has wrong value: got=%d want=%d", result.Value, expected)
+		return fmt.Errorf("object has wrong value: got=%f want=%f", result.Value, expected)
 	}
 
 	return nil
@@ -360,7 +360,7 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 // Check that an Object is a Float and that its value is correct.
 func testFloatObject(expected float64, actual object.Object) error {
-	result, ok := actual.(*object.Float)
+	result, ok := actual.(*object.Number)
 
 	if !ok {
 		return fmt.Errorf("object is not float: got=%T(%+v)", actual, actual)
@@ -452,7 +452,7 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 
 	switch expected := expected.(type) {
 	case int:
-		err := testIntegerObject(int64(expected), actual)
+		err := testIntegerObject(float64(expected), actual)
 
 		if err != nil {
 			t.Errorf("testIntegerObject failed: %s", err)
